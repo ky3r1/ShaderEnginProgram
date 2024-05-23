@@ -151,10 +151,14 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, scroll_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
-
 		{
 			buffer_desc.ByteWidth = sizeof(scene_constants);
 			hr = device->CreateBuffer(&buffer_desc, nullptr, scene_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
+		{
+			buffer_desc.ByteWidth = sizeof(dissolve_constants);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, dissolve_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
 	}
@@ -249,6 +253,7 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::ColorEdit4("material_color", reinterpret_cast<float*>(&material_color));
 	ImGui::Checkbox("utility flag", &flag); 
 	ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
+	ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
 	ImGui::End();
 #endif
 }
@@ -364,30 +369,19 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 												0.1f,
 												100.0f);
 	}
-	// 定数バッファの更新
-	{
-		// 0番はメッシュ側で更新している
-		scroll_constants scroll{};
-		scroll.scroll_direction.x = scroll_direction.x;
-		scroll.scroll_direction.y = scroll_direction.y;
-		immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
-		immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
-		immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
-
-		scene_constants scene{};
-		scene.options.x = cursor_position.x;
-		scene.options.y = cursor_position.y;
-		scene.options.z = timer;
-		scene.options.w = flag;
-		DirectX::XMStoreFloat4x4(&scene.view_projection, V* P);
-		immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
-		immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
-		immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
-
-	}
 	// static_mesh描画
 	if(dummy_static_mesh)
 	{
+		//定数バッファの更新
+		{
+			scroll_constants scroll{};
+			scroll.scroll_direction.x = scroll_direction.x;
+			scroll.scroll_direction.y = scroll_direction.y;
+			immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
+			immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+			immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+		}
+
 		immediate_context->IASetInputLayout(mesh_input_layout.Get());
 		immediate_context->VSSetShader(mesh_vertex_shader.Get(), nullptr, 0);
 		immediate_context->PSSetShader(mesh_pixel_shader.Get(), nullptr, 0);
@@ -403,6 +397,25 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 	// sprite描画
 	if(dummy_sprite)
 	{
+		//定数バッファの更新
+		{
+			scene_constants scene{};
+			scene.options.x = cursor_position.x;
+			scene.options.y = cursor_position.y;
+			scene.options.z = timer;
+			scene.options.w = flag;
+			DirectX::XMStoreFloat4x4(&scene.view_projection, V * P);
+			immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
+			immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
+			immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
+
+			dissolve_constants dissolve{};
+			dissolve.parameters.x = dissolve_value;
+			immediate_context->UpdateSubresource(dissolve_constant_buffer.Get(), 0, 0, &dissolve, 0, 0);
+			immediate_context->VSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+			immediate_context->PSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+		}
+
 		immediate_context->IASetInputLayout(sprite_input_layout.Get());
 		immediate_context->PSSetShaderResources(1, 1, mask_texture.GetAddressOf());
 		immediate_context->VSSetShader(sprite_vertex_shader.Get(), nullptr, 0);

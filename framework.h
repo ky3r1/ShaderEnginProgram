@@ -209,12 +209,12 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scroll_constant_buffer;
 	DirectX::XMFLOAT2 scroll_direction;
 
-	//struct dissolve_constants
-	//{
-	//	DirectX::XMFLOAT4 parameters;	//x:ディゾルブ適応量、yzw:空き
-	//};
-	//float dissolve_value{ 0.0f };
-	//Microsoft::WRL::ComPtr<ID3D11Buffer> dissolve_constant_buffer;
+	struct dissolve_constants
+	{
+		DirectX::XMFLOAT4 parameters;	//x:ディゾルブ適応量、yzw:空き
+	};
+	float dissolve_value{ 0.0f };
+	Microsoft::WRL::ComPtr<ID3D11Buffer> dissolve_constant_buffer;
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
