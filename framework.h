@@ -199,5 +199,14 @@ private:
 			elapsed_time += 1.0f;
 		}
 	}
+
+public:
+	struct scroll_constants
+	{
+		DirectX::XMFLOAT2 scroll_direction;
+		DirectX::XMFLOAT2 scroll_dummy;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> scroll_constant_buffer;
+	DirectX::XMFLOAT2 scroll_direction;
 };
 

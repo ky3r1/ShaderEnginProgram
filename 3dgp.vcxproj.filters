@@ -134,6 +134,12 @@
     <FxCompile Include="wireframe.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="resources\UVScroll_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\UVScroll_ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite.hlsli">
@@ -143,6 +149,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="static_mesh.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\UVScroll.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
