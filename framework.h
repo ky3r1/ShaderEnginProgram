@@ -208,5 +208,9 @@ public:
 	};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scroll_constant_buffer;
 	DirectX::XMFLOAT2 scroll_direction;
+
+private:
+	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
 };
 

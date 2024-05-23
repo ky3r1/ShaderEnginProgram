@@ -3,8 +3,6 @@
 #include "shader.h"
 #include "texture.h"
 
-#define UINT01
-
 framework::framework(HWND hwnd) : hwnd(hwnd)
 {
 }
@@ -79,10 +77,14 @@ bool framework::initialize()
 	// サンプラステートの生成
 	{
 		D3D11_SAMPLER_DESC sampler_desc{};
+		//画質
 		sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+
+		//ここ変えるとループだったり伸びたりする
 		sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 		sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 		sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+
 		sampler_desc.MipLODBias = 0;
 		sampler_desc.MaxAnisotropy = 16;
 		sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
@@ -144,19 +146,11 @@ bool framework::initialize()
 		buffer_desc.CPUAccessFlags = 0;
 		buffer_desc.MiscFlags = 0;
 		buffer_desc.StructureByteStride = 0;
-#ifdef UINT01
 		{
 			buffer_desc.ByteWidth = sizeof(scroll_constants);
 			hr = device->CreateBuffer(&buffer_desc, nullptr, scroll_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
-#else
-		{
-			buffer_desc.ByteWidth = sizeof(scene_constants);
-			hr = device->CreateBuffer(&buffer_desc, nullptr, scene_constant_buffer.GetAddressOf());
-			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
-		}
-#endif
 	}
 	// 描画オブジェクトの読み込み
 	{
@@ -165,6 +159,7 @@ bool framework::initialize()
 		scaling.y = 0.01f;
 		scaling.z = 0.01f;
 		dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
+		load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
 	}
 	// シェーダーの読み込み
 	{
@@ -194,7 +189,18 @@ bool framework::initialize()
 				{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			};
-#ifdef UINT01
+#if true
+			create_vs_from_cso(device.Get(),
+				"sprite_dissolve_vs.cso",
+				sprite_vertex_shader.GetAddressOf(),
+				sprite_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"sprite_dissolve_ps.cso",
+				sprite_pixel_shader.GetAddressOf());
+
+#else
 			create_vs_from_cso(device.Get(),
 				"UVScroll_vs.cso",
 				sprite_vertex_shader.GetAddressOf(),
@@ -204,18 +210,9 @@ bool framework::initialize()
 			create_ps_from_cso(device.Get(),
 				"UVScroll_ps.cso",
 				sprite_pixel_shader.GetAddressOf());
-#else
-
-			create_vs_from_cso(device.Get(),
-				"sprite_vs.cso",
-				sprite_vertex_shader.GetAddressOf(),
-				sprite_input_layout.GetAddressOf(),
-				input_element_desc,
-				_countof(input_element_desc));
-			create_ps_from_cso(device.Get(),
-				"sprite_ps.cso",
-				sprite_pixel_shader.GetAddressOf());
 #endif
+
+
 		}
 
 	}
@@ -249,7 +246,7 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::SliderFloat3("rotation", &rotation.x, -10.0f, +10.0f);
 	ImGui::ColorEdit4("material_color", reinterpret_cast<float*>(&material_color));
 	ImGui::Checkbox("utility flag", &flag); 
-	ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -10.0f, +10.0f);
+	ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
 	ImGui::End();
 #endif
 }
@@ -368,24 +365,13 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 	// 定数バッファの更新
 	{
 		// 0番はメッシュ側で更新している
-#ifdef UINT01
 		scroll_constants scroll{};
 		scroll.scroll_direction.x = scroll_direction.x;
 		scroll.scroll_direction.y = scroll_direction.y;
 		immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
 		immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
-#else
-		scene_constants scene{};
-		scene.options.x = cursor_position.x;
-		scene.options.y = cursor_position.y;
-		scene.options.z = timer;
-		scene.options.w = flag;
-		DirectX::XMStoreFloat4x4(&scene.view_projection, V* P);
-		immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
-		immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
-		immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
-#endif
+
 	}
 	// static_mesh描画
 	if(dummy_static_mesh)
@@ -406,10 +392,11 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 	if(dummy_sprite)
 	{
 		immediate_context->IASetInputLayout(sprite_input_layout.Get());
+		immediate_context->PSSetShaderResources(1, 1, mask_texture.GetAddressOf());
 		immediate_context->VSSetShader(sprite_vertex_shader.Get(), nullptr, 0);
 		immediate_context->PSSetShader(sprite_pixel_shader.Get(), nullptr, 0);
 		immediate_context->PSSetSamplers(0, 1, sampler_state.GetAddressOf());
-		dummy_sprite->render(immediate_context.Get(), 256, 128, SCREEN_WIDTH - 256 * 2/2, SCREEN_HEIGHT - 128 * 2/2);
+		dummy_sprite->render(immediate_context.Get(), 256, 128, SCREEN_WIDTH - 256 * 2, SCREEN_HEIGHT - 128 * 2);
 	}
 
 #ifdef USE_IMGUI

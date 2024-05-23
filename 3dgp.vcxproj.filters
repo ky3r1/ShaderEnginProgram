@@ -113,46 +113,55 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <None Include="geometric_primitive.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sprite.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sprite_dissolve.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="static_mesh.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="UVScroll.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="geometric_primitive_ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="geometric_primitive_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="sprite_dissolve_ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="sprite_dissolve_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
     <FxCompile Include="sprite_ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="sprite_vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="geometric_primitive_vs.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="geometric_primitive_ps.hlsl">
+    <FxCompile Include="static_mesh_ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="static_mesh_vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="static_mesh_ps.hlsl">
+    <FxCompile Include="UVScroll_ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="UVScroll_vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="wireframe.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="resources\UVScroll_vs.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\UVScroll_ps.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="sprite.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="geometric_primitive.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="static_mesh.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="resources\UVScroll.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
   </ItemGroup>
 </Project>
