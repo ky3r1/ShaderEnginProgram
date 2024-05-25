@@ -43,13 +43,6 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11BlendState> blend_state;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizer_state;
 
-	struct scene_constants
-	{
-		DirectX::XMFLOAT4X4 view_projection;
-		DirectX::XMFLOAT4 options;	//	xy : マウスの座標値, z : タイマー, w : フラグ
-	};
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> scene_constant_buffer;
 	float timer{0.0f};
 	bool flag{false};
 
@@ -216,6 +209,14 @@ public:
 	float dissolve_value{ 0.0f };
 	Microsoft::WRL::ComPtr<ID3D11Buffer> dissolve_constant_buffer;
 
+	struct scene_constants
+	{
+		DirectX::XMFLOAT4X4 view_projection;
+		DirectX::XMFLOAT4 options;	//	xy : マウスの座標値, z : タイマー, w : フラグ
+		DirectX::XMFLOAT4 camera_position;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> scene_constant_buffer;
+
 	struct  light_constants
 	{
 		DirectX::XMFLOAT4 ambient_color;
@@ -225,8 +226,8 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
 
 	DirectX::XMFLOAT4 ambient_color{ 0.2f,0.2f,0.2f,0.2f };
-	DirectX::XMFLOAT4 direction_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
-	DirectX::XMFLOAT4 direction_light_color{ 1.0f,1.0f,1.0f,1.0f };
+	DirectX::XMFLOAT4 directional_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
+	DirectX::XMFLOAT4 directional_light_color{ 1.0f,1.0f,1.0f,1.0f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;

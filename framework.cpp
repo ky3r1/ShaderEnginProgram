@@ -173,7 +173,7 @@ bool framework::initialize()
 			scaling.y = 0.01f;
 			scaling.z = 0.01f;
 			//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
-			load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
+			//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
 		}
 		// シェーダーの読み込み
 		{
@@ -185,7 +185,7 @@ bool framework::initialize()
 					{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 				};
-#if true
+#if false
 				create_vs_from_cso(device.Get(),
 					"static_mesh_vs.cso",
 					mesh_vertex_shader.GetAddressOf(),
@@ -271,8 +271,8 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::Checkbox("utility flag", &flag); 
 	ImGui::Separator();
 	ImGui::ColorEdit3("ambient_color", &ambient_color.x);
-	ImGui::SliderFloat3("direction_color", &direction_light_direction.x, -1.0f, +1.0f);
-	ImGui::ColorEdit3("direction_light_color", &direction_light_color.x);
+	ImGui::SliderFloat3("direction_color", &directional_light_direction.x, -1.0f, +1.0f);
+	ImGui::ColorEdit3("direction_light_color", &directional_light_color.x);
 
 
 	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
@@ -404,13 +404,13 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 			immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
 			immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
 
-			light_constants lights{};
-			lights.ambient_color = ambient_color;
-			lights.directional_light_color = direction_light_color;
-			lights.directional_light_direction = direction_light_direction;
-			immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
-			immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
-			immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+			//light_constants lights{};
+			//lights.ambient_color = ambient_color;
+			//lights.directional_light_color = direction_light_color;
+			//lights.directional_light_direction = direction_light_direction;
+			//immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
+			//immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+			//immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
 		}
 
 		immediate_context->IASetInputLayout(mesh_input_layout.Get());
@@ -435,6 +435,9 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 			scene.options.y = cursor_position.y;
 			scene.options.z = timer;
 			scene.options.w = flag;
+			scene.camera_position.x = camera_position.x;
+			scene.camera_position.y = camera_position.y;
+			scene.camera_position.z = camera_position.z;
 			DirectX::XMStoreFloat4x4(&scene.view_projection, V * P);
 			immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
 			immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
@@ -445,6 +448,15 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 			immediate_context->UpdateSubresource(dissolve_constant_buffer.Get(), 0, 0, &dissolve, 0, 0);
 			immediate_context->VSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
 			immediate_context->PSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+
+			light_constants lights{};
+			lights.ambient_color = ambient_color;
+			lights.directional_light_direction = directional_light_direction;
+			lights.directional_light_color = directional_light_color;
+			immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
+			immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+			immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+
 		}
 
 		immediate_context->IASetInputLayout(sprite_input_layout.Get());
