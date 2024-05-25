@@ -131,6 +131,9 @@
     <None Include="phong_shader.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shading_functions.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="geometric_primitive_ps.hlsl">

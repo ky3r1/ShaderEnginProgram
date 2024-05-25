@@ -221,6 +221,7 @@
   <ItemGroup>
     <None Include="geometric_primitive.hlsli" />
     <None Include="phong_shader.hlsli" />
+    <None Include="shading_functions.hlsli" />
     <None Include="sprite.hlsli" />
     <None Include="sprite_dissolve.hlsli" />
     <None Include="static_mesh.hlsli" />

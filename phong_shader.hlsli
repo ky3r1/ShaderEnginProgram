@@ -27,3 +27,5 @@ cbuffer LIGHT_CONSTANT_BUFFER : register(b2)
     float4 directional_light_direction;
     float4 directional_light_color;
 };
+
+#include "shading_functions.hlsli"
