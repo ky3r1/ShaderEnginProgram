@@ -44,7 +44,7 @@ float3 CalcHalfLambert(float3 N,float3 L,float3 C,float3 K)
 //リムライト
 //-------------------------
 // N: 法線(正規化済み)
-// E: 入射ベクトル(正規化済み)
+// E: 視線ベクトル(正規化済み)
 // L: 入射ベクトル(正規化済み)
 // C: 入射光(色・強さ)
 // RimPower: リムライトの強さ(初期値は要設定)
@@ -52,4 +52,20 @@ float CalcRimLight(float3 N,float3 E,float3 L,float3 C, float RimPower=20.0f)
 {
     float rim = 1.0f - saturate(dot(N, -E));
     return C * pow(rim, RimPower) * saturate(dot(L, -E));
+}
+
+//-------------------------
+//ランプシェーディング
+//-------------------------
+// tex: ランプシェーディング用テクスチャ
+// samp: ランプシェーディング用サンプラステート
+// N: 法線(正規化済み)
+// L: 入射ベクトル(正規化済み)
+// C: 入射光(色・強さ)
+// K: 反射率
+float CalcRampShading(Texture2D tex,SamplerState samp,float3 N,float3 L,float3 C,float3 K)
+{
+    float D = saturate(dot(N, -L) * 0.5f + 0.5f);
+    float Ramp = tex.Sample(samp, float2(D, 0.5f));
+    return C * Ramp * K.rgb;
 }

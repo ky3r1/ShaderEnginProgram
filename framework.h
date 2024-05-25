@@ -231,5 +231,8 @@ public:
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
+	D3D11_TEXTURE2D_DESC ramp_texture2dDesc;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ramp_texture;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> ramp_samper_state;
 };
 

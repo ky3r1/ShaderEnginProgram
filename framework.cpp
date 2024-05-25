@@ -3,6 +3,9 @@
 #include "shader.h"
 #include "texture.h"
 
+#define PHONGSHADER
+//#define RAMPSHADER
+
 framework::framework(HWND hwnd) : hwnd(hwnd)
 {
 }
@@ -174,6 +177,20 @@ bool framework::initialize()
 			scaling.z = 0.01f;
 			//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
 			//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
+			load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
+
+			//サンプラーステート生成
+			D3D11_SAMPLER_DESC sampler_desc{};
+			sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+			sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+			sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+			sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+			sampler_desc.MaxAnisotropy = 16;
+			sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+			sampler_desc.MinLOD = 0;
+			sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
+			hr = device->CreateSamplerState(&sampler_desc, ramp_samper_state.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
 		// シェーダーの読み込み
 		{
@@ -185,17 +202,7 @@ bool framework::initialize()
 					{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 				};
-#if false
-				create_vs_from_cso(device.Get(),
-					"static_mesh_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"static_mesh_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
-#else
+#ifdef PHONGSHADER
 				create_vs_from_cso(device.Get(),
 					"phong_shader_vs.cso",
 					mesh_vertex_shader.GetAddressOf(),
@@ -205,7 +212,22 @@ bool framework::initialize()
 				create_ps_from_cso(device.Get(),
 					"phong_shader_ps.cso",
 					mesh_pixel_shader.GetAddressOf());
-#endif			
+#endif // PHONGSHADER
+
+#ifdef RAMPSHADER
+				create_vs_from_cso(device.Get(),
+					"ramp_shader_vs.cso",
+					mesh_vertex_shader.GetAddressOf(),
+					mesh_input_layout.GetAddressOf(),
+					input_element_desc,
+					ARRAYSIZE(input_element_desc));
+				create_ps_from_cso(device.Get(),
+					"ramp_shader_ps.cso",
+					mesh_pixel_shader.GetAddressOf());
+#endif // RAMPSHADER
+
+
+
 			}
 			// sprite用デフォルト描画シェーダー
 			{
@@ -438,6 +460,10 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetShader(mesh_vertex_shader.Get(), nullptr, 0);
 		immediate_context->PSSetShader(mesh_pixel_shader.Get(), nullptr, 0);
 		immediate_context->PSSetSamplers(0, 1, sampler_state.GetAddressOf());
+
+		//t0・t1はstatic_meshのrender関数側で設定されるので t2 から設定する
+		immediate_context->PSSetShaderResources(2, 1, ramp_texture.GetAddressOf());
+		immediate_context->PSSetSamplers(2, 1, ramp_samper_state.GetAddressOf());
 
 		DirectX::XMMATRIX S{ DirectX::XMMatrixScaling(scaling.x, scaling.y, scaling.z) };
 		DirectX::XMMATRIX R{ DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };
