@@ -392,27 +392,48 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 												0.1f,
 												100.0f);
 	}
+
+	// 定数バッファの更新
+	{
+		// 0番はメッシュ側で更新している
+		//scroll_constants scroll{};
+		//scroll.scroll_direction.x = scroll_direction.x;
+		//scroll.scroll_direction.y = scroll_direction.y;
+		//immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
+		//immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+
+		scene_constants scene{};
+		scene.options.x = cursor_position.x;
+		scene.options.y = cursor_position.y;
+		scene.options.z = timer;
+		scene.options.w = flag;
+		scene.camera_position.x = camera_position.x;
+		scene.camera_position.y = camera_position.y;
+		scene.camera_position.z = camera_position.z;
+		DirectX::XMStoreFloat4x4(&scene.view_projection, V* P);
+		immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
+		immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
+
+		//dissolve_constants dissolve{};
+		//dissolve.parameters.x = dissolve_value;
+		//immediate_context->UpdateSubresource(dissolve_constant_buffer.Get(), 0, 0, &dissolve, 0, 0);
+		//immediate_context->VSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+
+		light_constants lights{};
+		lights.ambient_color = ambient_color;
+		lights.directional_light_direction = directional_light_direction;
+		lights.directional_light_color = directional_light_color;
+		immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
+		immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+	}
+
 	// static_mesh描画
 	if(dummy_static_mesh)
 	{
-		//定数バッファの更新
-		{
-			scroll_constants scroll{};
-			scroll.scroll_direction.x = scroll_direction.x;
-			scroll.scroll_direction.y = scroll_direction.y;
-			immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
-			immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
-			immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
-
-			//light_constants lights{};
-			//lights.ambient_color = ambient_color;
-			//lights.directional_light_color = direction_light_color;
-			//lights.directional_light_direction = direction_light_direction;
-			//immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
-			//immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
-			//immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
-		}
-
 		immediate_context->IASetInputLayout(mesh_input_layout.Get());
 		immediate_context->VSSetShader(mesh_vertex_shader.Get(), nullptr, 0);
 		immediate_context->PSSetShader(mesh_pixel_shader.Get(), nullptr, 0);
@@ -428,37 +449,6 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 	// sprite描画
 	if(dummy_sprite)
 	{
-		//定数バッファの更新
-		{
-			scene_constants scene{};
-			scene.options.x = cursor_position.x;
-			scene.options.y = cursor_position.y;
-			scene.options.z = timer;
-			scene.options.w = flag;
-			scene.camera_position.x = camera_position.x;
-			scene.camera_position.y = camera_position.y;
-			scene.camera_position.z = camera_position.z;
-			DirectX::XMStoreFloat4x4(&scene.view_projection, V * P);
-			immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
-			immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
-			immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
-
-			dissolve_constants dissolve{};
-			dissolve.parameters.x = dissolve_value;
-			immediate_context->UpdateSubresource(dissolve_constant_buffer.Get(), 0, 0, &dissolve, 0, 0);
-			immediate_context->VSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
-			immediate_context->PSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
-
-			light_constants lights{};
-			lights.ambient_color = ambient_color;
-			lights.directional_light_direction = directional_light_direction;
-			lights.directional_light_color = directional_light_color;
-			immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
-			immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
-			immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
-
-		}
-
 		immediate_context->IASetInputLayout(sprite_input_layout.Get());
 		immediate_context->PSSetShaderResources(1, 1, mask_texture.GetAddressOf());
 		immediate_context->VSSetShader(sprite_vertex_shader.Get(), nullptr, 0);
