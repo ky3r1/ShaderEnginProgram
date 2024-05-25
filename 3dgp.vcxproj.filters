@@ -128,6 +128,9 @@
     <None Include="UVScroll.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="phong_shader.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="geometric_primitive_ps.hlsl">
@@ -161,6 +164,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="wireframe.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="phong_shader_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="phong_shader_ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

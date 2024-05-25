@@ -161,69 +161,86 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, dissolve_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
-	}
-	// 描画オブジェクトの読み込み
-	{
-		dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
-		scaling.x = 0.01f;
-		scaling.y = 0.01f;
-		scaling.z = 0.01f;
-		dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
-		load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
-	}
-	// シェーダーの読み込み
-	{
-		// static_mesh用デフォルト描画シェーダー
 		{
-			D3D11_INPUT_ELEMENT_DESC input_element_desc[]
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			};
-			create_vs_from_cso(device.Get(),
-				"static_mesh_vs.cso",
-				mesh_vertex_shader.GetAddressOf(),
-				mesh_input_layout.GetAddressOf(),
-				input_element_desc,
-				ARRAYSIZE(input_element_desc));
-			create_ps_from_cso(device.Get(),
-				"static_mesh_ps.cso",
-				mesh_pixel_shader.GetAddressOf());
+			buffer_desc.ByteWidth = sizeof(light_constants);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, light_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
-		// sprite用デフォルト描画シェーダー
+		// 描画オブジェクトの読み込み
 		{
-			D3D11_INPUT_ELEMENT_DESC input_element_desc[]
+			dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
+			scaling.x = 0.01f;
+			scaling.y = 0.01f;
+			scaling.z = 0.01f;
+			//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
+			load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
+		}
+		// シェーダーの読み込み
+		{
+			// static_mesh用デフォルト描画シェーダー
 			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			};
+				D3D11_INPUT_ELEMENT_DESC input_element_desc[]
+				{
+					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+					{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				};
+#if true
+				create_vs_from_cso(device.Get(),
+					"static_mesh_vs.cso",
+					mesh_vertex_shader.GetAddressOf(),
+					mesh_input_layout.GetAddressOf(),
+					input_element_desc,
+					ARRAYSIZE(input_element_desc));
+				create_ps_from_cso(device.Get(),
+					"static_mesh_ps.cso",
+					mesh_pixel_shader.GetAddressOf());
+#else
+				create_vs_from_cso(device.Get(),
+					"phong_shader_vs.cso",
+					mesh_vertex_shader.GetAddressOf(),
+					mesh_input_layout.GetAddressOf(),
+					input_element_desc,
+					ARRAYSIZE(input_element_desc));
+				create_ps_from_cso(device.Get(),
+					"phong_shader_ps.cso",
+					mesh_pixel_shader.GetAddressOf());
+#endif			
+			}
+			// sprite用デフォルト描画シェーダー
+			{
+				D3D11_INPUT_ELEMENT_DESC input_element_desc[]
+				{
+					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+					{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				};
 
-			create_vs_from_cso(device.Get(),
-				"UVScroll_vs.cso",
-				sprite_vertex_shader.GetAddressOf(),
-				sprite_input_layout.GetAddressOf(),
-				input_element_desc,
-				_countof(input_element_desc));
-			create_ps_from_cso(device.Get(),
-				"UVScroll_ps.cso",
-				sprite_pixel_shader.GetAddressOf());
+				create_vs_from_cso(device.Get(),
+					"UVScroll_vs.cso",
+					sprite_vertex_shader.GetAddressOf(),
+					sprite_input_layout.GetAddressOf(),
+					input_element_desc,
+					_countof(input_element_desc));
+				create_ps_from_cso(device.Get(),
+					"UVScroll_ps.cso",
+					sprite_pixel_shader.GetAddressOf());
 
-			create_vs_from_cso(device.Get(),
-				"sprite_dissolve_vs.cso",
-				sprite_vertex_shader.GetAddressOf(),
-				sprite_input_layout.GetAddressOf(),
-				input_element_desc,
-				ARRAYSIZE(input_element_desc));
-			create_ps_from_cso(device.Get(),
-				"sprite_dissolve_ps.cso",
-				sprite_pixel_shader.GetAddressOf());
+				create_vs_from_cso(device.Get(),
+					"sprite_dissolve_vs.cso",
+					sprite_vertex_shader.GetAddressOf(),
+					sprite_input_layout.GetAddressOf(),
+					input_element_desc,
+					ARRAYSIZE(input_element_desc));
+				create_ps_from_cso(device.Get(),
+					"sprite_dissolve_ps.cso",
+					sprite_pixel_shader.GetAddressOf());
+			}
+
 		}
 
+		return true;
 	}
-
-	return true;
 }
 
 bool framework::uninitialize()
@@ -252,8 +269,14 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::SliderFloat3("rotation", &rotation.x, -10.0f, +10.0f);
 	ImGui::ColorEdit4("material_color", reinterpret_cast<float*>(&material_color));
 	ImGui::Checkbox("utility flag", &flag); 
-	ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
-	ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
+	ImGui::Separator();
+	ImGui::ColorEdit3("ambient_color", &ambient_color.x);
+	ImGui::SliderFloat3("direction_color", &direction_light_direction.x, -1.0f, +1.0f);
+	ImGui::ColorEdit3("direction_light_color", &direction_light_color.x);
+
+
+	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
+	//ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
 	ImGui::End();
 #endif
 }
@@ -380,6 +403,14 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 			immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
 			immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
 			immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+
+			light_constants lights{};
+			lights.ambient_color = ambient_color;
+			lights.directional_light_color = direction_light_color;
+			lights.directional_light_direction = direction_light_direction;
+			immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
+			immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+			immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
 		}
 
 		immediate_context->IASetInputLayout(mesh_input_layout.Get());

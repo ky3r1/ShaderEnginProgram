@@ -215,6 +215,18 @@ public:
 	};
 	float dissolve_value{ 0.0f };
 	Microsoft::WRL::ComPtr<ID3D11Buffer> dissolve_constant_buffer;
+
+	struct  light_constants
+	{
+		DirectX::XMFLOAT4 ambient_color;
+		DirectX::XMFLOAT4 directional_light_direction;
+		DirectX::XMFLOAT4 directional_light_color;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
+
+	DirectX::XMFLOAT4 ambient_color{ 0.2f,0.2f,0.2f,0.2f };
+	DirectX::XMFLOAT4 direction_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
+	DirectX::XMFLOAT4 direction_light_color{ 1.0f,1.0f,1.0f,1.0f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;

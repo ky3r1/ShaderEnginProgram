@@ -20,7 +20,10 @@ public:
 	struct constants
 	{
 		DirectX::XMFLOAT4X4 world;
-		DirectX::XMFLOAT4 material_color;
+		//DirectX::XMFLOAT4 material_color;
+		DirectX::XMFLOAT4 Ka;
+		DirectX::XMFLOAT4 Kd;
+		DirectX::XMFLOAT4 Ks;
 	};
 
 	struct subset

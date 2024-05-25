@@ -368,10 +368,13 @@ void static_mesh::render(ID3D11DeviceContext* immediate_context, const XMFLOAT4X
 		immediate_context->PSSetShaderResources(0, 1, material.shader_resource_views[0].GetAddressOf());
 		immediate_context->PSSetShaderResources(1, 1, material.shader_resource_views[1].GetAddressOf());
 
-		constants data{ world, material_color };
-		XMStoreFloat4(&data.material_color, XMLoadFloat4(&material_color) * XMLoadFloat4(&material.Kd));
+		//constants data{ world, material_color };
+		//XMStoreFloat4(&data.material_color, XMLoadFloat4(&material_color) * XMLoadFloat4(&material.Kd));
+		constants data{ world, material.Ka,material.Kd,material.Ks };
+		XMStoreFloat4(&data.Kd, XMLoadFloat4(&material_color) * XMLoadFloat4(&material.Kd));
 		immediate_context->UpdateSubresource(constant_buffer.Get(), 0, 0, &data, 0, 0);
 		immediate_context->VSSetConstantBuffers(0, 1, constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(0, 1, constant_buffer.GetAddressOf());
 
 		for (const subset& subset : subsets)
 		{
