@@ -224,15 +224,24 @@ public:
 		DirectX::XMFLOAT4 directional_light_color;
 	};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
-
 	DirectX::XMFLOAT4 ambient_color{ 0.2f,0.2f,0.2f,0.2f };
 	DirectX::XMFLOAT4 directional_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
 	DirectX::XMFLOAT4 directional_light_color{ 1.0f,1.0f,1.0f,1.0f };
+
+	struct enviroment_constants
+	{
+		float enviroment_value;
+		DirectX::XMFLOAT3 dummy;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> enviroment_constant_buffer;
+	D3D11_TEXTURE2D_DESC enviroment_texture2dDesc;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> environment_texture;
+	float encironent_value{ 0.5f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
 	D3D11_TEXTURE2D_DESC ramp_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ramp_texture;
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> ramp_samper_state;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> ramp_sampler_state;
 };
 

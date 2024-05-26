@@ -3,8 +3,9 @@
 #include "shader.h"
 #include "texture.h"
 
-#define PHONGSHADER
+//#define PHONGSHADER
 //#define RAMPSHADER
+#define ENVIROMENTMAPPINGSHADER
 
 framework::framework(HWND hwnd) : hwnd(hwnd)
 {
@@ -169,6 +170,11 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, light_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
+		{
+			buffer_desc.ByteWidth = sizeof(enviroment_constants);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, enviroment_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
 		// 描画オブジェクトの読み込み
 		{
 			dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
@@ -189,8 +195,10 @@ bool framework::initialize()
 			sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 			sampler_desc.MinLOD = 0;
 			sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
-			hr = device->CreateSamplerState(&sampler_desc, ramp_samper_state.GetAddressOf());
+			hr = device->CreateSamplerState(&sampler_desc, ramp_sampler_state.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+			load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
 		}
 		// シェーダーの読み込み
 		{
@@ -226,6 +234,17 @@ bool framework::initialize()
 					mesh_pixel_shader.GetAddressOf());
 #endif // RAMPSHADER
 
+#ifdef ENVIROMENTMAPPINGSHADER
+				create_vs_from_cso(device.Get(),
+					"environment_mapping_shader_vs.cso",
+					mesh_vertex_shader.GetAddressOf(),
+					mesh_input_layout.GetAddressOf(),
+					input_element_desc,
+					ARRAYSIZE(input_element_desc));
+				create_ps_from_cso(device.Get(),
+					"environment_mapping_shader_ps.cso",
+					mesh_pixel_shader.GetAddressOf());
+#endif // ENVIROMENTMAPPINGSHADER
 
 
 			}
@@ -287,15 +306,18 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::Begin("ImGUI");
 
 	ImGui::SliderFloat3("translation", &translation.x, -10.0f, +10.0f);
-	ImGui::SliderFloat3("scaling", &scaling.x, -10.0f, +10.0f);
+	ImGui::SliderFloat3("scaling", &scaling.x, 0.010f, +10.0f);
 	ImGui::SliderFloat3("rotation", &rotation.x, -10.0f, +10.0f);
 	ImGui::ColorEdit4("material_color", reinterpret_cast<float*>(&material_color));
-	ImGui::Checkbox("utility flag", &flag); 
+	ImGui::Separator();
+	ImGui::SliderFloat3("camera_position", &camera_position.x, -10.0f, +10.0f);
+	ImGui::SliderFloat3("camera_focus", &camera_focus.x, -10.0f, +10.0f);
 	ImGui::Separator();
 	ImGui::ColorEdit3("ambient_color", &ambient_color.x);
 	ImGui::SliderFloat3("direction_color", &directional_light_direction.x, -1.0f, +1.0f);
 	ImGui::ColorEdit3("direction_light_color", &directional_light_color.x);
-
+	ImGui::Separator();
+	ImGui::SliderFloat("environment_value", &encironent_value, 0.0f, +1.0f);
 
 	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
 	//ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
@@ -451,6 +473,12 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
 		immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+
+		enviroment_constants enviroments{};
+		enviroments.enviroment_value = encironent_value;
+		immediate_context->UpdateSubresource(enviroment_constant_buffer.Get(), 0, 0, &enviroments, 0, 0);
+		immediate_context->VSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
 	}
 
 	// static_mesh描画
@@ -463,7 +491,10 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 
 		//t0・t1はstatic_meshのrender関数側で設定されるので t2 から設定する
 		immediate_context->PSSetShaderResources(2, 1, ramp_texture.GetAddressOf());
-		immediate_context->PSSetSamplers(2, 1, ramp_samper_state.GetAddressOf());
+		immediate_context->PSSetSamplers(2, 1, ramp_sampler_state.GetAddressOf());
+
+		immediate_context->PSSetShaderResources(3, 1, environment_texture.GetAddressOf());
+
 
 		DirectX::XMMATRIX S{ DirectX::XMMatrixScaling(scaling.x, scaling.y, scaling.z) };
 		DirectX::XMMATRIX R{ DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };

@@ -137,6 +137,9 @@
     <None Include="ramp_shader.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="environment_mapping_shader.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="geometric_primitive_ps.hlsl">
@@ -182,6 +185,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="ramp_shader_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="environment_mapping_shader_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="environment_mapping_shader_ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

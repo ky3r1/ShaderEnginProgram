@@ -69,3 +69,20 @@ float CalcRampShading(Texture2D tex,SamplerState samp,float3 N,float3 L,float3 C
     float Ramp = tex.Sample(samp, float2(D, 0.5f));
     return C * Ramp * K.rgb;
 }
+
+//-------------------------
+//球体環境マッピング
+//-------------------------
+// tex: ランプシェーディング用テクスチャ
+// samp: ランプシェーディング用サンプラステート
+// color: 現在のピクセル色
+// N: 法線(正規化済み)
+// C: 入射光(色・強さ)
+// value: 適応率
+float3 CalcSphereEnvironment(Texture2D tex,SamplerState samp,in float3 color,float3 N,float3 C,float value)
+{
+    float3 R = reflect(C, N);
+    float2 texcoord = R.xy * 0.5f + 0.5f;
+    return lerp(color.rgb, tex.Sample(samp, texcoord).rgb, value);
+
+}
