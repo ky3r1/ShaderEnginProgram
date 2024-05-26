@@ -3,9 +3,9 @@
 #include "shader.h"
 #include "texture.h"
 
-//#define PHONGSHADER
+#define PHONGSHADER
 //#define RAMPSHADER
-#define ENVIROMENTMAPPINGSHADER
+//#define ENVIRONMENTMAPPINGSHADER
 
 framework::framework(HWND hwnd) : hwnd(hwnd)
 {
@@ -177,7 +177,8 @@ bool framework::initialize()
 		}
 		// 描画オブジェクトの読み込み
 		{
-			dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
+			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
+			dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\globe\\globe.obj", true);
 			scaling.x = 0.01f;
 			scaling.y = 0.01f;
 			scaling.z = 0.01f;
@@ -234,7 +235,7 @@ bool framework::initialize()
 					mesh_pixel_shader.GetAddressOf());
 #endif // RAMPSHADER
 
-#ifdef ENVIROMENTMAPPINGSHADER
+#ifdef ENVIRONMENTMAPPINGSHADER
 				create_vs_from_cso(device.Get(),
 					"environment_mapping_shader_vs.cso",
 					mesh_vertex_shader.GetAddressOf(),
@@ -244,7 +245,7 @@ bool framework::initialize()
 				create_ps_from_cso(device.Get(),
 					"environment_mapping_shader_ps.cso",
 					mesh_pixel_shader.GetAddressOf());
-#endif // ENVIROMENTMAPPINGSHADER
+#endif // ENVIRONMENTMAPPINGSHADER
 
 
 			}
