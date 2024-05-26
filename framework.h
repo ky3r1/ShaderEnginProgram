@@ -46,7 +46,7 @@ public:
 	float timer{0.0f};
 	bool flag{false};
 
-	DirectX::XMFLOAT3 camera_position{ 0.0f, 0.0f, -10.0f };
+	DirectX::XMFLOAT3 camera_position{ 10.0f, 0.0f, -10.0f };
 	DirectX::XMFLOAT3 camera_focus{ 0.0f, 0.0f, 0.0f };
 	float rotateX{ 0.0f };
 	float rotateY{ DirectX::XMConvertToRadians(180) };
@@ -59,7 +59,7 @@ public:
 	DirectX::XMFLOAT3 rotation{ 0, 0, 0 };
 	DirectX::XMFLOAT4 material_color{ 1 ,1, 1, 1 };
 
-	std::unique_ptr<static_mesh> dummy_static_mesh;
+	std::vector<std::unique_ptr<static_mesh>> dummy_static_meshes;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> mesh_vertex_shader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> mesh_input_layout;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> mesh_pixel_shader;
@@ -247,7 +247,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> hemisphere_light_constant_buffer;
 	DirectX::XMFLOAT4 sky_color{ 1.0f,0.0f,0.0f,1.0f };
 	DirectX::XMFLOAT4 ground_color{ 0.0f,0.0f,1.0f,1.0f };
-	float hemisphere_weight{ 0.5f };
+	float hemisphere_weight{ 0.0f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
