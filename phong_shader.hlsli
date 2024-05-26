@@ -31,4 +31,11 @@ cbuffer LIGHT_CONSTANT_BUFFER : register(b2)
     float4 directional_light_color;
 };
 
+cbuffer HEMISPHERE_LIGHT_CONSTANT_BUFFER : register(b4)
+{
+    float4 sky_color;
+    float4 ground_color;
+    float4 hemisphere_weight;
+};
+
 #include "shading_functions.hlsli"

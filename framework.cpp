@@ -175,6 +175,11 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, enviroment_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
+		{
+			buffer_desc.ByteWidth = sizeof(hemisphere_light_constants);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, hemisphere_light_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
 		// 描画オブジェクトの読み込み
 		{
 			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
@@ -311,14 +316,16 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::SliderFloat3("rotation", &rotation.x, -10.0f, +10.0f);
 	ImGui::ColorEdit4("material_color", reinterpret_cast<float*>(&material_color));
 	ImGui::Separator();
-	ImGui::SliderFloat3("camera_position", &camera_position.x, -10.0f, +10.0f);
-	ImGui::SliderFloat3("camera_focus", &camera_focus.x, -10.0f, +10.0f);
-	ImGui::Separator();
 	ImGui::ColorEdit3("ambient_color", &ambient_color.x);
 	ImGui::SliderFloat3("direction_color", &directional_light_direction.x, -1.0f, +1.0f);
 	ImGui::ColorEdit3("direction_light_color", &directional_light_color.x);
 	ImGui::Separator();
 	ImGui::SliderFloat("environment_value", &encironent_value, 0.0f, +1.0f);
+	ImGui::Separator();
+	ImGui::ColorEdit3("sky_color", &sky_color.x);
+	ImGui::ColorEdit3("ground_color", &ground_color.x);
+	ImGui::SliderFloat("hemisphere_weight", &hemisphere_weight, 0.0f, 1.0f);
+
 
 	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
 	//ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
@@ -480,6 +487,14 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->UpdateSubresource(enviroment_constant_buffer.Get(), 0, 0, &enviroments, 0, 0);
 		immediate_context->VSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
+
+		hemisphere_light_constants hemisphere_lights{};
+		hemisphere_lights.sky_color = sky_color;
+		hemisphere_lights.ground_color = ground_color;
+		hemisphere_lights.hemisphere_weight.x = hemisphere_weight;
+		immediate_context->UpdateSubresource(hemisphere_light_constant_buffer.Get(), 0, 0, &hemisphere_lights, 0, 0);
+		immediate_context->VSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
 	}
 
 	// static_mesh描画

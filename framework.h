@@ -237,6 +237,17 @@ public:
 	D3D11_TEXTURE2D_DESC enviroment_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> environment_texture;
 	float encironent_value{ 0.5f };
+
+	struct hemisphere_light_constants
+	{
+		DirectX::XMFLOAT4 sky_color;
+		DirectX::XMFLOAT4 ground_color;
+		DirectX::XMFLOAT4 hemisphere_weight;//x : wight, yzw : ‹ó‚«
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> hemisphere_light_constant_buffer;
+	DirectX::XMFLOAT4 sky_color{ 1.0f,0.0f,0.0f,1.0f };
+	DirectX::XMFLOAT4 ground_color{ 0.0f,0.0f,1.0f,1.0f };
+	float hemisphere_weight{ 0.5f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
