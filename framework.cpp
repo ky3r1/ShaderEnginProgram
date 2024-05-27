@@ -78,6 +78,32 @@ bool framework::initialize()
 		hr = device->CreateDepthStencilView(depth_stencil_buffer.Get(), &depth_stencil_view_desc, depth_stencil_view.GetAddressOf());
 		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 	}
+	// シーン描画用のバッファ生成
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> color_buffer{};
+		D3D11_TEXTURE2D_DESC texture2d_desc{};
+		texture2d_desc.Width = SCREEN_WIDTH;
+		texture2d_desc.Height = SCREEN_HEIGHT;
+		texture2d_desc.MipLevels = 1;
+		texture2d_desc.ArraySize = 1;
+		texture2d_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		texture2d_desc.SampleDesc.Count = 1;
+		texture2d_desc.SampleDesc.Quality = 0;
+		texture2d_desc.Usage = D3D11_USAGE_DEFAULT;
+		texture2d_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texture2d_desc.CPUAccessFlags = 0;
+		texture2d_desc.MiscFlags = 0;
+		hr = device->CreateTexture2D(&texture2d_desc, NULL, color_buffer.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+		//	レンダーターゲットビュー生成
+		hr = device->CreateRenderTargetView(color_buffer.Get(), NULL, scene_render_target_view.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+		//	シェーダーリソースビュー生成
+		hr = device->CreateShaderResourceView(color_buffer.Get(), NULL, scene_shader_resource_view.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+	}
 	// サンプラステートの生成
 	{
 		D3D11_SAMPLER_DESC sampler_desc{};
@@ -202,6 +228,7 @@ bool framework::initialize()
 			dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
 
 			//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
+			dummy_sprite = std::make_unique<sprite>(device.Get(), scene_shader_resource_view);
 			//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
 			load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
 
@@ -389,8 +416,19 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::ColorEdit3("fog_color", &fog_color.x);
 	ImGui::SliderFloat("fog_near", &fog_range.x, 0.1f, +100.0f);
 	ImGui::SliderFloat("fog_far", &fog_range.y, 0.1f, +100.0f);
+	ImGui::Separator();
+	ImGui::SliderFloat("hueShift", &color_filter_parameter.x, 0.0f, +360.0f);
+	ImGui::SliderFloat("saturation", &color_filter_parameter.y, 0.0f, +2.0f);
+	ImGui::Separator();
 	ImGui::SliderFloat3("directional_light_direction", &directional_light_direction.x, -1.0f, +1.0f);
 	ImGui::ColorEdit3("directional_light_color", &directional_light_color.x);
+	ImGui::Separator();
+	if (ImGui::TreeNode("texture"))
+	{
+		ImGui::Text("scene_texture");
+		ImGui::Image(scene_shader_resource_view.Get(), { 256, 144 }, { 0, 0 }, { 1, 1 }, { 1, 1, 1, 1 });
+		ImGui::TreePop();
+	}
 	if (ImGui::TreeNode("points"))
 	{
 		for (int i = 0; i < 8; ++i)
@@ -437,9 +475,10 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 
 	// レンダーターゲット等の設定とクリア
 	FLOAT color[]{ 0.2f, 0.2f, 0.2f, 1.0f };
-	immediate_context->ClearRenderTargetView(render_target_view.Get(), color);
+	immediate_context->ClearRenderTargetView(scene_render_target_view.Get(), color);
 	immediate_context->ClearDepthStencilView(depth_stencil_view.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	immediate_context->OMSetRenderTargets(1, render_target_view.GetAddressOf(), depth_stencil_view.Get());
+	immediate_context->OMSetRenderTargets(1, scene_render_target_view.GetAddressOf(), depth_stencil_view.Get());
+
 
 	// ビューポートの設定
 	D3D11_VIEWPORT viewport{};
@@ -660,6 +699,11 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		DirectX::XMStoreFloat4x4(&world, S * R * T);
 		dummy_static_meshes[1]->render(immediate_context.Get(), world, material_color);
 	}
+	//	バックバッファに描画先を戻して描画する
+	immediate_context->ClearRenderTargetView(render_target_view.Get(), color);
+	immediate_context->ClearDepthStencilView(depth_stencil_view.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	immediate_context->OMSetRenderTargets(1, render_target_view.GetAddressOf(), depth_stencil_view.Get());
+
 	// sprite描画
 	if(dummy_sprite)
 	{

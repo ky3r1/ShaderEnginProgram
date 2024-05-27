@@ -305,5 +305,8 @@ private:
 	D3D11_TEXTURE2D_DESC ramp_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ramp_texture;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> ramp_sampler_state;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> scene_render_target_view;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> scene_shader_resource_view;
+
 };
 

@@ -36,6 +36,49 @@ sprite::sprite(ID3D11Device* device, const wchar_t* filename)
 
 	load_texture_from_file(device, filename, shader_resource_view.GetAddressOf(), &texture2d_desc);
 }
+
+sprite::sprite(ID3D11Device* device, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shader_resource_view)
+{
+	HRESULT hr{ S_OK };
+
+	vertex vertices[]
+	{
+		{ { -1.0, +1.0, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
+		{ { +1.0, +1.0, 0 }, { 1, 1, 1, 1 }, { 1, 0 } },
+		{ { -1.0, -1.0, 0 }, { 1, 1, 1, 1 }, { 0, 1 } },
+		{ { +1.0, -1.0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } },
+	};
+
+	D3D11_BUFFER_DESC buffer_desc{};
+	buffer_desc.ByteWidth = sizeof(vertices);
+	buffer_desc.Usage = D3D11_USAGE_DYNAMIC;
+	buffer_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	buffer_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	buffer_desc.MiscFlags = 0;
+	buffer_desc.StructureByteStride = 0;
+	D3D11_SUBRESOURCE_DATA subresource_data{};
+	subresource_data.pSysMem = vertices;
+	subresource_data.SysMemPitch = 0;
+	subresource_data.SysMemSlicePitch = 0;
+	hr = device->CreateBuffer(&buffer_desc, &subresource_data, vertex_buffer.GetAddressOf());
+	_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+	if (shader_resource_view)
+	{
+		isLoadFile = false;
+		shader_resource_view.Get()->AddRef();
+		this->shader_resource_view = shader_resource_view;
+		// 
+		Microsoft::WRL::ComPtr<ID3D11Resource> resource;
+		this->shader_resource_view->GetResource(resource.GetAddressOf());
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture2d;
+		hr = resource.Get()->QueryInterface<ID3D11Texture2D>(texture2d.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		texture2d->GetDesc(&texture2d_desc);
+	}
+}
+
+
 void sprite::render(ID3D11DeviceContext* immediate_context,
 	float dx, float dy, float dw, float dh,
 	float r, float g, float b, float a,
@@ -139,6 +182,10 @@ void sprite::render(ID3D11DeviceContext* immediate_context,
 	immediate_context->PSSetShaderResources(0, 1, shader_resource_view.GetAddressOf());
 
 	immediate_context->Draw(4, 0);
+
+	ID3D11ShaderResourceView* srvs[] = { nullptr };
+	immediate_context->PSSetShaderResources(0, 1, srvs);
+
 }
 void sprite::render(ID3D11DeviceContext* immediate_context, float dx, float dy, float dw, float dh)
 {
@@ -148,6 +195,8 @@ void sprite::render(ID3D11DeviceContext* immediate_context, float dx, float dy, 
 
 sprite::~sprite()
 {
+	if (!isLoadFile)
+		shader_resource_view->Release();
 }
 
 void sprite::textout(ID3D11DeviceContext* immediate_context, std::string s, float x, float y, float w, float h, float r, float g, float b, float a)
