@@ -38,4 +38,10 @@ cbuffer HEMISPHERE_LIGHT_CONSTANT_BUFFER : register(b4)
     float4 hemisphere_weight;
 };
 
+cbuffer FOG_CONSTANT_BUFFER : register(b5)
+{
+    float4 fog_color;
+    float4 fog_range;
+}
+
 #include "shading_functions.hlsli"

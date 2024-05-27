@@ -99,3 +99,17 @@ float3 CalcHemiSphereLight(float3 normal, float3 up, float3 sky_color, float3 gr
     float factor = dot(normal, up) * 0.5f + 0.5f;
     return lerp(ground_color, sky_color, factor) * hemisphere_weight.x;
 }
+
+//-------------------------
+//フォグ
+//-------------------------
+// color: 現在のピクセルの色
+// fog_color: フォグの色
+// fog_range: フォグの範囲情報
+// eye_lange: 視点からの距離
+float4 CalcFog(in float4 color,float4 fog_color,float2 fog_range,float eye_length)
+{
+    float fogAlpha = saturate((eye_length - fog_range.x) / (fog_range.y - fog_range.x));
+    return lerp(color, fog_color, fogAlpha);
+
+}

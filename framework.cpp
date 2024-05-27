@@ -180,6 +180,11 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, hemisphere_light_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
+		{
+			buffer_desc.ByteWidth = sizeof(fog_constants);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, fog_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
 		// 描画オブジェクトの読み込み
 		{
 			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
@@ -328,7 +333,10 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::ColorEdit3("sky_color", &sky_color.x);
 	ImGui::ColorEdit3("ground_color", &ground_color.x);
 	ImGui::SliderFloat("hemisphere_weight", &hemisphere_weight, 0.0f, 1.0f);
-
+	ImGui::Separator();
+	ImGui::ColorEdit3("fog_color", &fog_color.x);
+	ImGui::SliderFloat("fog_near", &fog_range.x, 0.1f, +100.0f);
+	ImGui::SliderFloat("fog_far", &fog_range.y, 0.1f, +100.0f);
 
 	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
 	//ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
@@ -498,6 +506,13 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->UpdateSubresource(hemisphere_light_constant_buffer.Get(), 0, 0, &hemisphere_lights, 0, 0);
 		immediate_context->VSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
+
+		fog_constants fogs{};
+		fogs.fog_color = fog_color;
+		fogs.fog_range = fog_range;
+		immediate_context->UpdateSubresource(fog_constant_buffer.Get(), 0, 0, &fogs, 0, 0);
+		immediate_context->VSSetConstantBuffers(5, 1, fog_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(5, 1, fog_constant_buffer.GetAddressOf());
 	}
 
 	// static_mesh描画

@@ -46,7 +46,7 @@ public:
 	float timer{0.0f};
 	bool flag{false};
 
-	DirectX::XMFLOAT3 camera_position{ 10.0f, 0.0f, -10.0f };
+	DirectX::XMFLOAT3 camera_position{ 0.0f, 0.0f, -10.0f };
 	DirectX::XMFLOAT3 camera_focus{ 0.0f, 0.0f, 0.0f };
 	float rotateX{ 0.0f };
 	float rotateY{ DirectX::XMConvertToRadians(180) };
@@ -248,6 +248,15 @@ public:
 	DirectX::XMFLOAT4 sky_color{ 1.0f,0.0f,0.0f,1.0f };
 	DirectX::XMFLOAT4 ground_color{ 0.0f,0.0f,1.0f,1.0f };
 	float hemisphere_weight{ 0.0f };
+
+	struct fog_constants
+	{
+		DirectX::XMFLOAT4 fog_color;
+		DirectX::XMFLOAT4 fog_range; // x : near, y : far, zw : 空き
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> fog_constant_buffer;
+	DirectX::XMFLOAT4 fog_color{ 0.2f,0.2f,0.2f,1.0f };//クリアカラーに設定
+	DirectX::XMFLOAT4 fog_range{ 0.1f,100.0f,0,0 };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;

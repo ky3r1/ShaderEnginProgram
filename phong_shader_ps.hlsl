@@ -47,5 +47,7 @@ float4 main(VS_OUT pin):SV_TARGET
     color.rgb += directional_specular;
     color.rgb += rim_color.rgb;
     
+    color = CalcFog(color, fog_color, fog_range.xy, length(pin.world_position.xyz - camera_position.xyz));
+    
     return color;
 }
