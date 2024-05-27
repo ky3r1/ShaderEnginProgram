@@ -214,6 +214,57 @@ bool framework::initialize()
 
 			load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
 		}
+		//ポイントライト・スポットライトの初期位置を設定
+		{
+			//point_light
+			point_light[0].position.x = 10;
+			point_light[0].position.y = 1;
+			point_light[0].range = 10;
+			point_light[0].color = { 1,0,0,1 };
+
+			point_light[1].position.x = -10;
+			point_light[1].position.y = 1;
+			point_light[1].range = 10;
+			point_light[1].color = { 0,1,0,1 };
+
+			point_light[2].position.y = 1;
+			point_light[2].position.z = 10;
+			point_light[2].range = 10;
+			point_light[2].color = { 0,0,1,1 };
+
+			point_light[3].position.y = 1;
+			point_light[3].position.z = -10;
+			point_light[3].range = 10;
+			point_light[3].color = { 1,1,1,1 };
+
+			point_light[4].range = 10;
+			point_light[4].color = { 1,1,1,1 };
+
+			ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
+
+			//spot_light
+			spot_light[0].position = { 15,3,15,0 };
+			spot_light[0].direction = { -1,-1,-1,0 };
+			spot_light[0].range = 100;
+			spot_light[0].color = { 1,0,0,1 };
+
+			spot_light[1].position = { -15,3,15,0 };
+			spot_light[1].direction = { +1,-1,-1,0 };
+			spot_light[1].range = 100;
+			spot_light[1].color = { 0,1,0,1 };
+
+			spot_light[2].position = { 15,3,-15,0 };
+			spot_light[2].direction = { -1,-1,+1,0 };
+			spot_light[2].range = 100;
+			spot_light[2].color = { 0,0,1,1 };
+
+			spot_light[3].position = { -15,3,-15,0 };
+			spot_light[3].direction = { +1,-1,+1,0 };
+			spot_light[3].range = 100;
+			spot_light[3].color = { 1,1,1,1 };
+
+			ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
+		}
 		// シェーダーの読み込み
 		{
 			// static_mesh用デフォルト描画シェーダー
@@ -337,6 +388,40 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::ColorEdit3("fog_color", &fog_color.x);
 	ImGui::SliderFloat("fog_near", &fog_range.x, 0.1f, +100.0f);
 	ImGui::SliderFloat("fog_far", &fog_range.y, 0.1f, +100.0f);
+	ImGui::SliderFloat3("directional_light_direction", &directional_light_direction.x, -1.0f, +1.0f);
+	ImGui::ColorEdit3("directional_light_color", &directional_light_color.x);
+	if (ImGui::TreeNode("points"))
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			std::string p = std::string("position") + std::to_string(i);
+			ImGui::SliderFloat3(p.c_str(), &point_light[i].position.x, -10.0f, +10.0f);
+			std::string c = std::string("color") + std::to_string(i);
+			ImGui::ColorEdit3(c.c_str(), &point_light[i].color.x);
+			std::string r = std::string("range") + std::to_string(i);
+			ImGui::SliderFloat(r.c_str(), &point_light[i].range, 0.0f, +100.0f);
+		}
+		ImGui::TreePop();
+	}
+	if (ImGui::TreeNode("spots"))
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			std::string p = std::string("position") + std::to_string(i);
+			ImGui::SliderFloat3(p.c_str(), &spot_light[i].position.x, -10.0f, +10.0f);
+			std::string d = std::string("direction") + std::to_string(i);
+			ImGui::SliderFloat3(d.c_str(), &spot_light[i].direction.x, 0.0f, +1.0f);
+			std::string c = std::string("color") + std::to_string(i);
+			ImGui::ColorEdit3(c.c_str(), &spot_light[i].color.x);
+			std::string r = std::string("range") + std::to_string(i);
+			ImGui::SliderFloat(r.c_str(), &spot_light[i].range, 0.0f, +1000.0f);
+			std::string ic = std::string("inner") + std::to_string(i);
+			ImGui::SliderFloat(ic.c_str(), &spot_light[i].innerCorn, -1.0f, +1.0f);
+			std::string oc = std::string("outer") + std::to_string(i);
+			ImGui::SliderFloat(oc.c_str(), &spot_light[i].outerCorn, -1.0f, +1.0f);
+		}
+		ImGui::TreePop();
+	}
 
 	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
 	//ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
@@ -459,13 +544,8 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 	// 定数バッファの更新
 	{
 		// 0番はメッシュ側で更新している
-		//scroll_constants scroll{};
-		//scroll.scroll_direction.x = scroll_direction.x;
-		//scroll.scroll_direction.y = scroll_direction.y;
-		//immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
-		//immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
-		//immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
 
+		//1番
 		scene_constants scene{};
 		scene.options.x = cursor_position.x;
 		scene.options.y = cursor_position.y;
@@ -474,24 +554,43 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		scene.camera_position.x = camera_position.x;
 		scene.camera_position.y = camera_position.y;
 		scene.camera_position.z = camera_position.z;
-		DirectX::XMStoreFloat4x4(&scene.view_projection, V* P);
+		DirectX::XMStoreFloat4x4(&scene.view_projection, V * P);
 		immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
 		immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
 
-		//dissolve_constants dissolve{};
-		//dissolve.parameters.x = dissolve_value;
-		//immediate_context->UpdateSubresource(dissolve_constant_buffer.Get(), 0, 0, &dissolve, 0, 0);
-		//immediate_context->VSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
-		//immediate_context->PSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+		//2番
+		//scroll_constants scroll{};
+		//scroll.scroll_direction.x = scroll_direction.x;
+		//scroll.scroll_direction.y = scroll_direction.y;
+		//immediate_context->UpdateSubresource(scroll_constant_buffer.Get(), 0, 0, &scroll, 0, 0);
+		//immediate_context->VSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(2, 1, scroll_constant_buffer.GetAddressOf());
+
+		//light_constants lights{};
+		//lights.ambient_color = ambient_color;
+		//lights.directional_light_direction = directional_light_direction;
+		//lights.directional_light_color = directional_light_color;
+		//immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
+		//immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
 
 		light_constants lights{};
 		lights.ambient_color = ambient_color;
 		lights.directional_light_direction = directional_light_direction;
 		lights.directional_light_color = directional_light_color;
+		memcpy_s(lights.point_light, sizeof(lights.point_light), point_light, sizeof(point_light));
+		memcpy_s(lights.spot_light, sizeof(lights.spot_light), spot_light, sizeof(spot_light));
 		immediate_context->UpdateSubresource(light_constant_buffer.Get(), 0, 0, &lights, 0, 0);
 		immediate_context->VSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(2, 1, light_constant_buffer.GetAddressOf());
+
+		//3番
+		//dissolve_constants dissolve{};
+		//dissolve.parameters.x = dissolve_value;
+		//immediate_context->UpdateSubresource(dissolve_constant_buffer.Get(), 0, 0, &dissolve, 0, 0);
+		//immediate_context->VSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(3, 1, dissolve_constant_buffer.GetAddressOf());
 
 		enviroment_constants enviroments{};
 		enviroments.enviroment_value = encironent_value;
@@ -499,6 +598,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
 
+		//4番
 		hemisphere_light_constants hemisphere_lights{};
 		hemisphere_lights.sky_color = sky_color;
 		hemisphere_lights.ground_color = ground_color;
@@ -507,6 +607,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
 
+		//5番
 		fog_constants fogs{};
 		fogs.fog_color = fog_color;
 		fogs.fog_range = fog_range;

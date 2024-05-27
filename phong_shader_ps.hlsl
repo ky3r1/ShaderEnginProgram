@@ -21,28 +21,51 @@ float4 main(VS_OUT pin):SV_TARGET
     
     float3 ambient = ambient_color.rgb * ka.rgb;
     ambient += CalcHemiSphereLight(N, float3(0, 1, 0), sky_color.rgb, ground_color.rgb, hemisphere_weight);
-    //float3 directional_diffuse = 0;
-    //{
-    //    float power = saturate(dot(N, -L));
-    //    directional_diffuse = directional_light_color.rgb * power * kd.rgb;
-    //}
-    
+
     float3 directional_diffuse = CalcLambert(N, L, directional_light_color.rgb, kd.rgb);
-    //float3 directional_diffuse = CalcHalfLambert(N, L, directional_light_color.rgb, kd.rgb);
+    float3 directional_specular = CalcPhongSpecluar(N, L, E, directional_light_color.rgb, ks.rgb);
+    //光源の処理
+    float3 point_diffuse = 0;
+    float3 point_specular = 0;
+    for (int i = 0; i < 8; ++i)
+    {
+        float3 LP = pin.world_position.xyz - point_light[i].position.xyz;
+        float len = length(LP);
+        if (len >= point_light[i].range)
+            continue;
+        float attenuateLength = saturate(1.0f - len / point_light[i].range);
+        float attenuation = attenuateLength * attenuateLength;
+        LP /= len;
+        point_diffuse += CalcLambert(N, LP, point_light[i].color.rgb, kd.rgb) * attenuation;
+        point_specular += CalcPhongSpecluar(N, LP, E, point_light[i].color.rgb,ks.rgb) * attenuation;
+    }
     
-    //float3 directional_specular = 0;
-    //{
-    //    float3 R = reflect(L, N);
-    //    float power = max(dot(-E, R), 0);
-    //    power = pow(power, 128);
-    //    directional_specular = directional_light_color.rgb * power * ks.rgb;
-    //}
-    
-    float3 directional_specular = CalcPhongSpecluar(N, L, E, directional_light_color.rgb,ks.rgb);
+    //スポットライトの処理
+    float3 spot_diffuse = 0;
+    float3 spot_specular = 0;
+    for (int j = 0; j < 8; ++j)
+    {
+        float3 LP = pin.world_position.xyz - spot_light[j].position.xyz;
+        float len = length(LP);
+        if (len >= point_light[j].range)
+            continue;
+        float attenuateLength = saturate(1.0f - len / spot_light[j].range);
+        float attenuation = attenuateLength * attenuateLength;
+        LP /= len;
+        float3 spotDirection = normalize(spot_light[j].direction.xyz);
+        float angle = dot(spotDirection, LP);
+        float area = spot_light[j].innerCorn - spot_light[j].outerCorn;
+        attenuation *= saturate(1.0f - (spot_light[j].innerCorn - angle) / area);
+        spot_diffuse += CalcLambert(N, LP, spot_light[j].color.rgb, kd.rgb) * attenuation;
+        spot_specular += CalcPhongSpecluar(N, LP, E, spot_light[j].color.rgb, ks.rgb) * attenuation;
+    }
     
     float3 rim_color = CalcRimLight(N, E, L, directional_light_color.rgb);
     
+    
     color = float4(ambient, diffuse_color.a);
+    color.rgb += diffuse_color.rgb * (directional_diffuse + point_diffuse + spot_diffuse);
+    color.rgb += directional_specular + spot_specular + point_specular;
     color.rgb += diffuse_color.rgb * directional_diffuse;
     color.rgb += directional_specular;
     color.rgb += rim_color.rgb;

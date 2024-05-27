@@ -1,3 +1,5 @@
+#include "lights.hlsli"
+
 struct VS_OUT
 {
     float4 position : SV_POSITION;
@@ -29,6 +31,8 @@ cbuffer LIGHT_CONSTANT_BUFFER : register(b2)
     float4 ambient_color;
     float4 directional_light_direction;
     float4 directional_light_color;
+    point_lights point_light[8];
+    spot_lights spot_light[8];
 };
 
 cbuffer HEMISPHERE_LIGHT_CONSTANT_BUFFER : register(b4)

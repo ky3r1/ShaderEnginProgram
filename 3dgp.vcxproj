@@ -221,6 +221,7 @@
   <ItemGroup>
     <None Include="environment_mapping_shader.hlsli" />
     <None Include="geometric_primitive.hlsli" />
+    <None Include="lights.hlsli" />
     <None Include="phong_shader.hlsli" />
     <None Include="ramp_shader.hlsli" />
     <None Include="shading_functions.hlsli" />

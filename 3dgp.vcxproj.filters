@@ -140,6 +140,9 @@
     <None Include="environment_mapping_shader.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="lights.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="geometric_primitive_ps.hlsl">

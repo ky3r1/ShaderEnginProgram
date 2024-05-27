@@ -217,16 +217,16 @@ public:
 	};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scene_constant_buffer;
 
-	struct  light_constants
-	{
-		DirectX::XMFLOAT4 ambient_color;
-		DirectX::XMFLOAT4 directional_light_direction;
-		DirectX::XMFLOAT4 directional_light_color;
-	};
-	Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
-	DirectX::XMFLOAT4 ambient_color{ 0.2f,0.2f,0.2f,0.2f };
-	DirectX::XMFLOAT4 directional_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
-	DirectX::XMFLOAT4 directional_light_color{ 1.0f,1.0f,1.0f,1.0f };
+	//struct  light_constants
+	//{
+	//	DirectX::XMFLOAT4 ambient_color;
+	//	DirectX::XMFLOAT4 directional_light_direction;
+	//	DirectX::XMFLOAT4 directional_light_color;
+	//};
+	//Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
+	//DirectX::XMFLOAT4 ambient_color{ 0.2f,0.2f,0.2f,0.2f };
+	//DirectX::XMFLOAT4 directional_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
+	//DirectX::XMFLOAT4 directional_light_color{ 1.0f,1.0f,1.0f,1.0f };
 
 	struct enviroment_constants
 	{
@@ -257,6 +257,38 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> fog_constant_buffer;
 	DirectX::XMFLOAT4 fog_color{ 0.2f,0.2f,0.2f,1.0f };//クリアカラーに設定
 	DirectX::XMFLOAT4 fog_range{ 0.1f,100.0f,0,0 };
+
+	struct point_lights
+	{
+		DirectX::XMFLOAT4 position{ 0, 0, 0, 0 };
+		DirectX::XMFLOAT4 color{ 1, 1, 1, 1 };
+		float range{ 0 };
+		DirectX::XMFLOAT3 dummy;
+	};
+	struct spot_lights
+	{
+		DirectX::XMFLOAT4 position{ 0, 0, 0, 0 };
+		DirectX::XMFLOAT4 direction{ 0, 0, 1, 0 };
+		DirectX::XMFLOAT4 color{ 1, 1, 1, 1 };
+		float range{ 0 };
+		float innerCorn{ 0.99f };
+		float outerCorn{ 0.9f };
+		float dummy;
+	};
+	struct light_constants
+	{
+		DirectX::XMFLOAT4 ambient_color;
+		DirectX::XMFLOAT4 directional_light_direction;
+		DirectX::XMFLOAT4 directional_light_color;
+		point_lights point_light[8];
+		spot_lights spot_light[8];
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
+	DirectX::XMFLOAT4 ambient_color{ 0.2f, 0.2f, 0.2f, 0.2f };
+	DirectX::XMFLOAT4 directional_light_direction{ 0.0f, -1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT4 directional_light_color{ 1.0f, 1.0f, 1.0f, 1.0f };
+	point_lights point_light[8];
+	spot_lights spot_light[8];
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
