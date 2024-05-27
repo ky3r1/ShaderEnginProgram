@@ -185,6 +185,12 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, fog_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
+		{
+			buffer_desc.ByteWidth = sizeof(color_filter);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, color_filter_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
+
 		// 描画オブジェクトの読み込み
 		{
 			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
@@ -332,15 +338,10 @@ bool framework::initialize()
 					"UVScroll_ps.cso",
 					sprite_pixel_shader.GetAddressOf());
 
-				create_vs_from_cso(device.Get(),
-					"sprite_dissolve_vs.cso",
-					sprite_vertex_shader.GetAddressOf(),
-					sprite_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"sprite_dissolve_ps.cso",
-					sprite_pixel_shader.GetAddressOf());
+				create_vs_from_cso(device.Get(), "color_filter_vs.cso", sprite_vertex_shader.GetAddressOf(),
+					sprite_input_layout.GetAddressOf(), input_element_desc, _countof(input_element_desc));
+				create_ps_from_cso(device.Get(), "color_filter_ps.cso", sprite_pixel_shader.GetAddressOf());
+
 			}
 
 		}
@@ -607,6 +608,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
 
+
 		//5番
 		fog_constants fogs{};
 		fogs.fog_color = fog_color;
@@ -666,7 +668,16 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetShader(sprite_vertex_shader.Get(), nullptr, 0);
 		immediate_context->PSSetShader(sprite_pixel_shader.Get(), nullptr, 0);
 		immediate_context->PSSetSamplers(0, 1, sampler_state.GetAddressOf());
-		dummy_sprite->render(immediate_context.Get(), 256, 128, SCREEN_WIDTH - 256 * 2, SCREEN_HEIGHT - 128 * 2);
+
+		color_filter filter{};
+		filter.hueShift = color_filter_parameter.x;
+		filter.saturation = color_filter_parameter.y;
+		filter.brightness = color_filter_parameter.z;
+		immediate_context->UpdateSubresource(color_filter_constant_buffer.Get(), 0, 0, &filter, 0, 0);
+		immediate_context->VSSetConstantBuffers(4, 1, color_filter_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(4, 1, color_filter_constant_buffer.GetAddressOf());
+
+		dummy_sprite->render(immediate_context.Get(), 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	}
 
 #ifdef USE_IMGUI

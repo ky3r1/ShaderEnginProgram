@@ -289,6 +289,16 @@ public:
 	DirectX::XMFLOAT4 directional_light_color{ 1.0f, 1.0f, 1.0f, 1.0f };
 	point_lights point_light[8];
 	spot_lights spot_light[8];
+	struct color_filter
+	{
+		float	hueShift;	// êFëäí≤êÆ
+		float	saturation;	// ç ìxí≤êÆ
+		float	brightness;	// ñæìxí≤êÆ
+		float	dummy;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> color_filter_constant_buffer;
+	DirectX::XMFLOAT4 color_filter_parameter{ 0.0f, 1.0f, 1.0f, 0.0f };
+
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
