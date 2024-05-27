@@ -185,168 +185,173 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, fog_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
-		// 描画オブジェクトの読み込み
 		{
-			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
-			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\globe\\globe.obj", true);
-			//scaling.x = 0.01f;
-			//scaling.y = 0.01f;
-			//scaling.z = 0.01f;
-			dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true));
-			dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
-
-			//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
-			//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
-			load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
-
-			//サンプラーステート生成
-			D3D11_SAMPLER_DESC sampler_desc{};
-			sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-			sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-			sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-			sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-			sampler_desc.MaxAnisotropy = 16;
-			sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-			sampler_desc.MinLOD = 0;
-			sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
-			hr = device->CreateSamplerState(&sampler_desc, ramp_sampler_state.GetAddressOf());
+			buffer_desc.ByteWidth = sizeof(color_filter);
+			hr = device->CreateBuffer(&buffer_desc, nullptr, color_filter_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
-
-			load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
 		}
-		//ポイントライト・スポットライトの初期位置を設定
+	}
+	// 描画オブジェクトの読み込み
+	{
+		//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
+		//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\globe\\globe.obj", true);
+		//scaling.x = 0.01f;
+		//scaling.y = 0.01f;
+		//scaling.z = 0.01f;
+		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true));
+		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
+
+		dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
+		//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
+		load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
+
+		//サンプラーステート生成
+		D3D11_SAMPLER_DESC sampler_desc{};
+		sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler_desc.MaxAnisotropy = 16;
+		sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		sampler_desc.MinLOD = 0;
+		sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
+		hr = device->CreateSamplerState(&sampler_desc, ramp_sampler_state.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+		load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
+	}
+	//ポイントライト・スポットライトの初期位置を設定
+	{
+		//point_light
+		point_light[0].position.x = 10;
+		point_light[0].position.y = 1;
+		point_light[0].range = 10;
+		point_light[0].color = { 1,0,0,1 };
+
+		point_light[1].position.x = -10;
+		point_light[1].position.y = 1;
+		point_light[1].range = 10;
+		point_light[1].color = { 0,1,0,1 };
+
+		point_light[2].position.y = 1;
+		point_light[2].position.z = 10;
+		point_light[2].range = 10;
+		point_light[2].color = { 0,0,1,1 };
+
+		point_light[3].position.y = 1;
+		point_light[3].position.z = -10;
+		point_light[3].range = 10;
+		point_light[3].color = { 1,1,1,1 };
+
+		point_light[4].range = 10;
+		point_light[4].color = { 1,1,1,1 };
+
+		ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
+
+		//spot_light
+		spot_light[0].position = { 15,3,15,0 };
+		spot_light[0].direction = { -1,-1,-1,0 };
+		spot_light[0].range = 100;
+		spot_light[0].color = { 1,0,0,1 };
+
+		spot_light[1].position = { -15,3,15,0 };
+		spot_light[1].direction = { +1,-1,-1,0 };
+		spot_light[1].range = 100;
+		spot_light[1].color = { 0,1,0,1 };
+
+		spot_light[2].position = { 15,3,-15,0 };
+		spot_light[2].direction = { -1,-1,+1,0 };
+		spot_light[2].range = 100;
+		spot_light[2].color = { 0,0,1,1 };
+
+		spot_light[3].position = { -15,3,-15,0 };
+		spot_light[3].direction = { +1,-1,+1,0 };
+		spot_light[3].range = 100;
+		spot_light[3].color = { 1,1,1,1 };
+
+		ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
+	}
+	// シェーダーの読み込み
+	{
+		// static_mesh用デフォルト描画シェーダー
 		{
-			//point_light
-			point_light[0].position.x = 10;
-			point_light[0].position.y = 1;
-			point_light[0].range = 10;
-			point_light[0].color = { 1,0,0,1 };
-
-			point_light[1].position.x = -10;
-			point_light[1].position.y = 1;
-			point_light[1].range = 10;
-			point_light[1].color = { 0,1,0,1 };
-
-			point_light[2].position.y = 1;
-			point_light[2].position.z = 10;
-			point_light[2].range = 10;
-			point_light[2].color = { 0,0,1,1 };
-
-			point_light[3].position.y = 1;
-			point_light[3].position.z = -10;
-			point_light[3].range = 10;
-			point_light[3].color = { 1,1,1,1 };
-
-			point_light[4].range = 10;
-			point_light[4].color = { 1,1,1,1 };
-
-			ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
-
-			//spot_light
-			spot_light[0].position = { 15,3,15,0 };
-			spot_light[0].direction = { -1,-1,-1,0 };
-			spot_light[0].range = 100;
-			spot_light[0].color = { 1,0,0,1 };
-
-			spot_light[1].position = { -15,3,15,0 };
-			spot_light[1].direction = { +1,-1,-1,0 };
-			spot_light[1].range = 100;
-			spot_light[1].color = { 0,1,0,1 };
-
-			spot_light[2].position = { 15,3,-15,0 };
-			spot_light[2].direction = { -1,-1,+1,0 };
-			spot_light[2].range = 100;
-			spot_light[2].color = { 0,0,1,1 };
-
-			spot_light[3].position = { -15,3,-15,0 };
-			spot_light[3].direction = { +1,-1,+1,0 };
-			spot_light[3].range = 100;
-			spot_light[3].color = { 1,1,1,1 };
-
-			ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
-		}
-		// シェーダーの読み込み
-		{
-			// static_mesh用デフォルト描画シェーダー
+			D3D11_INPUT_ELEMENT_DESC input_element_desc[]
 			{
-				D3D11_INPUT_ELEMENT_DESC input_element_desc[]
-				{
-					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				};
+				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			};
 #ifdef PHONGSHADER
-				create_vs_from_cso(device.Get(),
-					"phong_shader_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"phong_shader_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"phong_shader_vs.cso",
+				mesh_vertex_shader.GetAddressOf(),
+				mesh_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"phong_shader_ps.cso",
+				mesh_pixel_shader.GetAddressOf());
 #endif // PHONGSHADER
 
 #ifdef RAMPSHADER
-				create_vs_from_cso(device.Get(),
-					"ramp_shader_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"ramp_shader_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"ramp_shader_vs.cso",
+				mesh_vertex_shader.GetAddressOf(),
+				mesh_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"ramp_shader_ps.cso",
+				mesh_pixel_shader.GetAddressOf());
 #endif // RAMPSHADER
 
 #ifdef ENVIRONMENTMAPPINGSHADER
-				create_vs_from_cso(device.Get(),
-					"environment_mapping_shader_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"environment_mapping_shader_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"environment_mapping_shader_vs.cso",
+				mesh_vertex_shader.GetAddressOf(),
+				mesh_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"environment_mapping_shader_ps.cso",
+				mesh_pixel_shader.GetAddressOf());
 #endif // ENVIRONMENTMAPPINGSHADER
 
 
-			}
-			// sprite用デフォルト描画シェーダー
+		}
+		// sprite用デフォルト描画シェーダー
+		{
+			D3D11_INPUT_ELEMENT_DESC input_element_desc[]
 			{
-				D3D11_INPUT_ELEMENT_DESC input_element_desc[]
-				{
-					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				};
+				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			};
 
-				create_vs_from_cso(device.Get(),
-					"UVScroll_vs.cso",
-					sprite_vertex_shader.GetAddressOf(),
-					sprite_input_layout.GetAddressOf(),
-					input_element_desc,
-					_countof(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"UVScroll_ps.cso",
-					sprite_pixel_shader.GetAddressOf());
+			//create_vs_from_cso(device.Get(),
+			//	"UVScroll_vs.cso",
+			//	sprite_vertex_shader.GetAddressOf(),
+			//	sprite_input_layout.GetAddressOf(),
+			//	input_element_desc,
+			//	_countof(input_element_desc));
+			//create_ps_from_cso(device.Get(),
+			//	"UVScroll_ps.cso",
+			//	sprite_pixel_shader.GetAddressOf());
 
-				create_vs_from_cso(device.Get(),
-					"sprite_dissolve_vs.cso",
-					sprite_vertex_shader.GetAddressOf(),
-					sprite_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"sprite_dissolve_ps.cso",
-					sprite_pixel_shader.GetAddressOf());
-			}
+			create_vs_from_cso(device.Get(), 
+				"color_filter_vs.cso", 
+				sprite_vertex_shader.GetAddressOf(),
+				sprite_input_layout.GetAddressOf(), 
+				input_element_desc,
+				_countof(input_element_desc));
+			create_ps_from_cso(device.Get(), 
+				"color_filter_ps.cso",
+				sprite_pixel_shader.GetAddressOf());
 
 		}
 
-		return true;
 	}
+	return true;
 }
 
 bool framework::uninitialize()
@@ -388,12 +393,16 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::ColorEdit3("fog_color", &fog_color.x);
 	ImGui::SliderFloat("fog_near", &fog_range.x, 0.1f, +100.0f);
 	ImGui::SliderFloat("fog_far", &fog_range.y, 0.1f, +100.0f);
+	ImGui::Separator();
+	ImGui::SliderFloat("hueShift", &color_filter_parameter.x, 0.0f, +360.0f);
+	ImGui::SliderFloat("saturation", &color_filter_parameter.y, 0.0f, +2.0f);
+	ImGui::SliderFloat("brightness", &color_filter_parameter.z, 0.0f, +2.0f);
 	ImGui::SliderFloat3("directional_light_direction", &directional_light_direction.x, -1.0f, +1.0f);
 	ImGui::ColorEdit3("directional_light_color", &directional_light_color.x);
 	if (ImGui::TreeNode("points"))
 	{
 		for (int i = 0; i < 8; ++i)
-		{
+		{	
 			std::string p = std::string("position") + std::to_string(i);
 			ImGui::SliderFloat3(p.c_str(), &point_light[i].position.x, -10.0f, +10.0f);
 			std::string c = std::string("color") + std::to_string(i);
@@ -599,13 +608,20 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->PSSetConstantBuffers(3, 1, enviroment_constant_buffer.GetAddressOf());
 
 		//4番
-		hemisphere_light_constants hemisphere_lights{};
-		hemisphere_lights.sky_color = sky_color;
-		hemisphere_lights.ground_color = ground_color;
-		hemisphere_lights.hemisphere_weight.x = hemisphere_weight;
-		immediate_context->UpdateSubresource(hemisphere_light_constant_buffer.Get(), 0, 0, &hemisphere_lights, 0, 0);
-		immediate_context->VSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
-		immediate_context->PSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
+		//hemisphere_light_constants hemisphere_lights{};
+		//hemisphere_lights.sky_color = sky_color;
+		//hemisphere_lights.ground_color = ground_color;
+		//hemisphere_lights.hemisphere_weight.x = hemisphere_weight;
+		//immediate_context->UpdateSubresource(hemisphere_light_constant_buffer.Get(), 0, 0, &hemisphere_lights, 0, 0);
+		//immediate_context->VSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(4, 1, hemisphere_light_constant_buffer.GetAddressOf());
+		color_filter filter{};
+		filter.hueShift = color_filter_parameter.x;
+		filter.saturation = color_filter_parameter.y;
+		filter.brightness = color_filter_parameter.z;
+		immediate_context->UpdateSubresource(color_filter_constant_buffer.Get(), 0, 0, &filter, 0, 0);
+		immediate_context->VSSetConstantBuffers(4, 1, color_filter_constant_buffer.GetAddressOf());
+		immediate_context->PSSetConstantBuffers(4, 1, color_filter_constant_buffer.GetAddressOf());
 
 		//5番
 		fog_constants fogs{};
@@ -648,7 +664,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 				R={ DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };
 				T = { DirectX::XMMatrixTranslation(translation.x + static_cast<float>(x) * 3, translation.y, translation.z + static_cast<float>(z) * 3) };
 				DirectX::XMStoreFloat4x4(&world, S * R * T);
-				dummy_static_meshes[0]->render(immediate_context.Get(), world, material_color);
+				//dummy_static_meshes[0]->render(immediate_context.Get(), world, material_color);
 			}
 		}
 		//平面モデルを表示
@@ -656,7 +672,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		R = { DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };
 		T = { DirectX::XMMatrixTranslation(translation.x, translation.y-1, translation.z ) };
 		DirectX::XMStoreFloat4x4(&world, S * R * T);
-		dummy_static_meshes[1]->render(immediate_context.Get(), world, material_color);
+		//dummy_static_meshes[1]->render(immediate_context.Get(), world, material_color);
 	}
 	// sprite描画
 	if(dummy_sprite)
@@ -666,7 +682,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetShader(sprite_vertex_shader.Get(), nullptr, 0);
 		immediate_context->PSSetShader(sprite_pixel_shader.Get(), nullptr, 0);
 		immediate_context->PSSetSamplers(0, 1, sampler_state.GetAddressOf());
-		dummy_sprite->render(immediate_context.Get(), 256, 128, SCREEN_WIDTH - 256 * 2, SCREEN_HEIGHT - 128 * 2);
+		dummy_sprite->render(immediate_context.Get(), 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	}
 
 #ifdef USE_IMGUI

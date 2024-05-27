@@ -217,17 +217,6 @@ public:
 	};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scene_constant_buffer;
 
-	//struct  light_constants
-	//{
-	//	DirectX::XMFLOAT4 ambient_color;
-	//	DirectX::XMFLOAT4 directional_light_direction;
-	//	DirectX::XMFLOAT4 directional_light_color;
-	//};
-	//Microsoft::WRL::ComPtr<ID3D11Buffer> light_constant_buffer;
-	//DirectX::XMFLOAT4 ambient_color{ 0.2f,0.2f,0.2f,0.2f };
-	//DirectX::XMFLOAT4 directional_light_direction{ 0.0f,-1.0f,1.0f,1.0f };
-	//DirectX::XMFLOAT4 directional_light_color{ 1.0f,1.0f,1.0f,1.0f };
-
 	struct enviroment_constants
 	{
 		float enviroment_value;
@@ -289,6 +278,16 @@ public:
 	DirectX::XMFLOAT4 directional_light_color{ 1.0f, 1.0f, 1.0f, 1.0f };
 	point_lights point_light[8];
 	spot_lights spot_light[8];
+
+	struct color_filter
+	{
+		float hueShift;		//êFëäí≤êÆ
+		float saturation;	//ç ìxí≤êÆ
+		float brightness;	//ñæìxí≤êÆ
+		float dummy;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> color_filter_constant_buffer;
+	DirectX::XMFLOAT4 color_filter_parameter{ 0.0f,1.0f,1.0f,0.0f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
