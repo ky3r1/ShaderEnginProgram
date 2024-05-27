@@ -229,7 +229,8 @@ bool framework::initialize()
 		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true));
 		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
 
-		dummy_sprite = std::make_unique<sprite>(device.Get(), scene_shader_resource_view);
+		//dummy_sprite = std::make_unique<sprite>(device.Get(), scene_shader_resource_view);
+		dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
 		//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
 		load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
 
@@ -315,16 +316,18 @@ bool framework::initialize()
 			//	"UVScroll_ps.cso",
 			//	sprite_pixel_shader.GetAddressOf());
 
-			create_vs_from_cso(device.Get(), 
-				"color_filter_vs.cso", 
+			//create_vs_from_cso(device.Get(), "color_filter_vs.cso", sprite_vertex_shader.GetAddressOf(),
+			//	sprite_input_layout.GetAddressOf(), input_element_desc, _countof(input_element_desc));
+			//create_ps_from_cso(device.Get(), "color_filter_ps.cso", sprite_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"sprite_dissolve_vs.cso",
 				sprite_vertex_shader.GetAddressOf(),
-				sprite_input_layout.GetAddressOf(), 
+				sprite_input_layout.GetAddressOf(),
 				input_element_desc,
-				_countof(input_element_desc));
-			create_ps_from_cso(device.Get(), 
-				"color_filter_ps.cso",
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"sprite_dissolve_ps.cso",
 				sprite_pixel_shader.GetAddressOf());
-
 		}
 
 	}
@@ -660,6 +663,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->VSSetConstantBuffers(4, 1, color_filter_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(4, 1, color_filter_constant_buffer.GetAddressOf());
 
+
 		//5”Ô
 		fog_constants fogs{};
 		fogs.fog_color = fog_color;
@@ -670,7 +674,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 	}
 
 	// static_mesh•`‰æ
-	//if(dummy_static_mesh)
+	//if(dummy_static_meshes)
 	{
 		immediate_context->IASetInputLayout(mesh_input_layout.Get());
 		immediate_context->VSSetShader(mesh_vertex_shader.Get(), nullptr, 0);

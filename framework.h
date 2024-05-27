@@ -281,13 +281,13 @@ public:
 
 	struct color_filter
 	{
-		float hueShift;		//色相調整
-		float saturation;	//彩度調整
-		float brightness;	//明度調整
-		float dummy;
+		float	hueShift;	// 色相調整
+		float	saturation;	// 彩度調整
+		float	brightness;	// 明度調整
+		float	dummy;
 	};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> color_filter_constant_buffer;
-	DirectX::XMFLOAT4 color_filter_parameter{ 0.0f,1.0f,1.0f,0.0f };
+	DirectX::XMFLOAT4 color_filter_parameter{ 0.0f, 1.0f, 1.0f, 0.0f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
