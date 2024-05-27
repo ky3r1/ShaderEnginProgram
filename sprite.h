@@ -10,7 +10,7 @@ class sprite
 {
 private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertex_buffer;
-
+	bool isLoadingFile = true;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shader_resource_view;
 	D3D11_TEXTURE2D_DESC texture2d_desc;
 
@@ -23,6 +23,7 @@ public:
 	};
 
 	sprite(ID3D11Device *device, const wchar_t* filename);
+	sprite(ID3D11Device* device, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shader_resource_view);
 	virtual ~sprite();
 
 	void render(ID3D11DeviceContext* immediate_context, float dx, float dy, float dw, float dh, float r, float g, float b, float a, float angle/*degree*/);

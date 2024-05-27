@@ -78,6 +78,7 @@ bool framework::initialize()
 		hr = device->CreateDepthStencilView(depth_stencil_buffer.Get(), &depth_stencil_view_desc, depth_stencil_view.GetAddressOf());
 		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 	}
+
 	// サンプラステートの生成
 	{
 		D3D11_SAMPLER_DESC sampler_desc{};
@@ -191,6 +192,33 @@ bool framework::initialize()
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
 	}
+	// シーン描画用のバッファ生成
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> color_buffer{};
+		D3D11_TEXTURE2D_DESC texture2d_desc{};
+		texture2d_desc.Width = SCREEN_WIDTH;
+		texture2d_desc.Height = SCREEN_HEIGHT;
+		texture2d_desc.MipLevels = 1;
+		texture2d_desc.ArraySize = 1;
+		texture2d_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		texture2d_desc.SampleDesc.Count = 1;
+		texture2d_desc.SampleDesc.Quality = 0;
+		texture2d_desc.Usage = D3D11_USAGE_DEFAULT;
+		texture2d_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texture2d_desc.CPUAccessFlags = 0;
+		texture2d_desc.MiscFlags = 0;
+		hr = device->CreateTexture2D(&texture2d_desc, NULL, color_buffer.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+		//	レンダーターゲットビュー生成
+		hr = device->CreateRenderTargetView(color_buffer.Get(), NULL, scene_render_target_view.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+		//	シェーダーリソースビュー生成
+		hr = device->CreateShaderResourceView(color_buffer.Get(), NULL, scene_shader_resource_view.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+	}
+
 	// 描画オブジェクトの読み込み
 	{
 		//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
@@ -201,7 +229,7 @@ bool framework::initialize()
 		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true));
 		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
 
-		dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
+		dummy_sprite = std::make_unique<sprite>(device.Get(), scene_shader_resource_view);
 		//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
 		load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
 
@@ -219,57 +247,6 @@ bool framework::initialize()
 		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 
 		load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
-	}
-	//ポイントライト・スポットライトの初期位置を設定
-	{
-		//point_light
-		point_light[0].position.x = 10;
-		point_light[0].position.y = 1;
-		point_light[0].range = 10;
-		point_light[0].color = { 1,0,0,1 };
-
-		point_light[1].position.x = -10;
-		point_light[1].position.y = 1;
-		point_light[1].range = 10;
-		point_light[1].color = { 0,1,0,1 };
-
-		point_light[2].position.y = 1;
-		point_light[2].position.z = 10;
-		point_light[2].range = 10;
-		point_light[2].color = { 0,0,1,1 };
-
-		point_light[3].position.y = 1;
-		point_light[3].position.z = -10;
-		point_light[3].range = 10;
-		point_light[3].color = { 1,1,1,1 };
-
-		point_light[4].range = 10;
-		point_light[4].color = { 1,1,1,1 };
-
-		ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
-
-		//spot_light
-		spot_light[0].position = { 15,3,15,0 };
-		spot_light[0].direction = { -1,-1,-1,0 };
-		spot_light[0].range = 100;
-		spot_light[0].color = { 1,0,0,1 };
-
-		spot_light[1].position = { -15,3,15,0 };
-		spot_light[1].direction = { +1,-1,-1,0 };
-		spot_light[1].range = 100;
-		spot_light[1].color = { 0,1,0,1 };
-
-		spot_light[2].position = { 15,3,-15,0 };
-		spot_light[2].direction = { -1,-1,+1,0 };
-		spot_light[2].range = 100;
-		spot_light[2].color = { 0,0,1,1 };
-
-		spot_light[3].position = { -15,3,-15,0 };
-		spot_light[3].direction = { +1,-1,+1,0 };
-		spot_light[3].range = 100;
-		spot_light[3].color = { 1,1,1,1 };
-
-		ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
 	}
 	// シェーダーの読み込み
 	{
@@ -351,6 +328,58 @@ bool framework::initialize()
 		}
 
 	}
+
+	//ポイントライト・スポットライトの初期位置を設定
+	{
+		//point_light
+		point_light[0].position.x = 10;
+		point_light[0].position.y = 1;
+		point_light[0].range = 10;
+		point_light[0].color = { 1,0,0,1 };
+
+		point_light[1].position.x = -10;
+		point_light[1].position.y = 1;
+		point_light[1].range = 10;
+		point_light[1].color = { 0,1,0,1 };
+
+		point_light[2].position.y = 1;
+		point_light[2].position.z = 10;
+		point_light[2].range = 10;
+		point_light[2].color = { 0,0,1,1 };
+
+		point_light[3].position.y = 1;
+		point_light[3].position.z = -10;
+		point_light[3].range = 10;
+		point_light[3].color = { 1,1,1,1 };
+
+		point_light[4].range = 10;
+		point_light[4].color = { 1,1,1,1 };
+
+		ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
+
+		//spot_light
+		spot_light[0].position = { 15,3,15,0 };
+		spot_light[0].direction = { -1,-1,-1,0 };
+		spot_light[0].range = 100;
+		spot_light[0].color = { 1,0,0,1 };
+
+		spot_light[1].position = { -15,3,15,0 };
+		spot_light[1].direction = { +1,-1,-1,0 };
+		spot_light[1].range = 100;
+		spot_light[1].color = { 0,1,0,1 };
+
+		spot_light[2].position = { 15,3,-15,0 };
+		spot_light[2].direction = { -1,-1,+1,0 };
+		spot_light[2].range = 100;
+		spot_light[2].color = { 0,0,1,1 };
+
+		spot_light[3].position = { -15,3,-15,0 };
+		spot_light[3].direction = { +1,-1,+1,0 };
+		spot_light[3].range = 100;
+		spot_light[3].color = { 1,1,1,1 };
+
+		ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
+		}
 	return true;
 }
 
@@ -397,6 +426,14 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::SliderFloat("hueShift", &color_filter_parameter.x, 0.0f, +360.0f);
 	ImGui::SliderFloat("saturation", &color_filter_parameter.y, 0.0f, +2.0f);
 	ImGui::SliderFloat("brightness", &color_filter_parameter.z, 0.0f, +2.0f);
+	ImGui::Separator();
+	if (ImGui::TreeNode("texture"))
+	{
+		ImGui::Text("scene_texture");
+		ImGui::Image(scene_shader_resource_view.Get(), { 256, 144 }, { 0, 0 }, { 1, 1 }, { 1, 1, 1, 1 });
+		ImGui::TreePop();
+	}
+
 	ImGui::SliderFloat3("directional_light_direction", &directional_light_direction.x, -1.0f, +1.0f);
 	ImGui::ColorEdit3("directional_light_color", &directional_light_color.x);
 	if (ImGui::TreeNode("points"))
@@ -431,9 +468,6 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 		}
 		ImGui::TreePop();
 	}
-
-	//ImGui::SliderFloat2("scroll_direction", &scroll_direction.x, -4.0f, +4.0f);
-	//ImGui::SliderFloat("scroll_value", &dissolve_value, 0.0f, +1.0f);
 	ImGui::End();
 #endif
 }
@@ -445,9 +479,12 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 
 	// レンダーターゲット等の設定とクリア
 	FLOAT color[]{ 0.2f, 0.2f, 0.2f, 1.0f };
-	immediate_context->ClearRenderTargetView(render_target_view.Get(), color);
+	//immediate_context->ClearRenderTargetView(render_target_view.Get(), color);
+	//immediate_context->ClearDepthStencilView(depth_stencil_view.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	//immediate_context->OMSetRenderTargets(1, render_target_view.GetAddressOf(), depth_stencil_view.Get());
+	immediate_context->ClearRenderTargetView(scene_render_target_view.Get(), color);
 	immediate_context->ClearDepthStencilView(depth_stencil_view.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	immediate_context->OMSetRenderTargets(1, render_target_view.GetAddressOf(), depth_stencil_view.Get());
+	immediate_context->OMSetRenderTargets(1, scene_render_target_view.GetAddressOf(), depth_stencil_view.Get());
 
 	// ビューポートの設定
 	D3D11_VIEWPORT viewport{};
@@ -664,7 +701,7 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 				R={ DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };
 				T = { DirectX::XMMatrixTranslation(translation.x + static_cast<float>(x) * 3, translation.y, translation.z + static_cast<float>(z) * 3) };
 				DirectX::XMStoreFloat4x4(&world, S * R * T);
-				//dummy_static_meshes[0]->render(immediate_context.Get(), world, material_color);
+				dummy_static_meshes[0]->render(immediate_context.Get(), world, material_color);
 			}
 		}
 		//平面モデルを表示
@@ -672,11 +709,15 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		R = { DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };
 		T = { DirectX::XMMatrixTranslation(translation.x, translation.y-1, translation.z ) };
 		DirectX::XMStoreFloat4x4(&world, S * R * T);
-		//dummy_static_meshes[1]->render(immediate_context.Get(), world, material_color);
+		dummy_static_meshes[1]->render(immediate_context.Get(), world, material_color);
 	}
 	// sprite描画
-	if(dummy_sprite)
+	if (dummy_sprite)
 	{
+		immediate_context->ClearRenderTargetView(render_target_view.Get(), color);
+		immediate_context->ClearDepthStencilView(depth_stencil_view.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+		immediate_context->OMSetRenderTargets(1, render_target_view.GetAddressOf(), depth_stencil_view.Get());
+
 		immediate_context->IASetInputLayout(sprite_input_layout.Get());
 		immediate_context->PSSetShaderResources(1, 1, mask_texture.GetAddressOf());
 		immediate_context->VSSetShader(sprite_vertex_shader.Get(), nullptr, 0);
