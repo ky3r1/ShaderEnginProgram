@@ -72,15 +72,15 @@ float4 main(VS_OUT pin):SV_TARGET
     color.rgb += directional_specular;
     color.rgb += rim_color.rgb;
     
-    //{
-    //    //シャドウマップから深度値を取得
-    //    float depth = shadow_map.Sample(shadow_sampler_state, pin.shadow_texcoord.xy).r;
-    //    //深度値を比較して影かどうかを判定する
-    //    if(pin.shadow_texcoord.z-depth>shadow_bias)
-    //    {
-    //        color.rgb *= shadow_color.rgb;
-    //    }
-    //}
+    {
+        //シャドウマップから深度値を取得
+        float depth = shadow_map.Sample(shadow_sampler_state, pin.shadow_texcoord.xy).r;
+        //深度値を比較して影かどうかを判定する
+        if (pin.shadow_texcoord.z - depth > shadow_bias)
+        {
+            color.rgb *= shadow_color.rgb;
+        }
+    }
     
     color = CalcFog(color, fog_color, fog_range.xy, length(pin.world_position.xyz - camera_position.xyz));
     
