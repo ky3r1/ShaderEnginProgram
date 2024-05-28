@@ -299,6 +299,21 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> color_filter_constant_buffer;
 	DirectX::XMFLOAT4 color_filter_parameter{ 0.0f, 1.0f, 1.0f, 0.0f };
 
+	struct shadowmap_constants
+	{
+		DirectX::XMFLOAT4X4 light_view_projection;	//ライトの位置から見た射影行列
+		DirectX::XMFLOAT3 shadow_color;				//影色
+		float shadow_bias;							//深度バイアス
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer>shadowmap_constant_buffer;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView>shadowmap_depth_stencil_view;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowmap_shader_resource_view;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowmap_sampler_state;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> shadowmap_caster_vertex_shader;
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> shadowmap_caster_input_layout;
+	DirectX::XMFLOAT4X4 light_view_projection;
+	float shadow_bias{ 0.008f };
+	DirectX::XMFLOAT3 shadow_color{ 0.3f,0.3f,0.3f };
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;
@@ -307,6 +322,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> ramp_sampler_state;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> scene_render_target_view;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> scene_shader_resource_view;
-
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilView>shadowmap_depth_stancil_view;
+	//Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowmap_shader_resource_view;
+	//Microsoft::WRL::ComPtr<ID3D11VertexShader> shadowmap_caster_vertex_shader;
+	//Microsoft::WRL::ComPtr<ID3D11InputLayout> shadowmap_caster_input_layout;
 };
 

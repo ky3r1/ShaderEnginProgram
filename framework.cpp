@@ -7,6 +7,10 @@
 //#define RAMPSHADER
 //#define ENVIRONMENTMAPPINGSHADER
 
+CONST LONG SHADOWMAP_WIDTH{ 1024 };
+CONST LONG SHADOWMAP_HEIGHT{ 1024 };
+CONST float SHADOWMAP_DRAWRECT{ 30 };
+
 framework::framework(HWND hwnd) : hwnd(hwnd)
 {
 }
@@ -216,165 +220,230 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, color_filter_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
+		//{
+		//	buffer_desc.ByteWidth = sizeof(shadowmap_constants);
+		//	hr = device->CreateBuffer(&buffer_desc, nullptr, shadowmap_constant_buffer.GetAddressOf());
+		//	_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		//}
+	}	//ライトから見たシーンの深度描画用のバッファ生成
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> depth_buffer{};
+		D3D11_TEXTURE2D_DESC texture2d_desc{};
+		texture2d_desc.Width = SHADOWMAP_WIDTH;
+		texture2d_desc.Height = SHADOWMAP_HEIGHT;
+		texture2d_desc.MipLevels = 1;
+		texture2d_desc.ArraySize = 1;
+		texture2d_desc.Format = DXGI_FORMAT_R32_TYPELESS;
+		texture2d_desc.SampleDesc.Count = 1;
+		texture2d_desc.SampleDesc.Quality = 0;
+		texture2d_desc.Usage = D3D11_USAGE_DEFAULT;
+		texture2d_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+		texture2d_desc.CPUAccessFlags = 0;
+		texture2d_desc.MiscFlags = 0;
+		hr = device->CreateTexture2D(&texture2d_desc, NULL, depth_buffer.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		//深度ステンシルビュー生成
+		D3D11_DEPTH_STENCIL_VIEW_DESC depth_stencil_view_desc{};
+		depth_stencil_view_desc.Format = DXGI_FORMAT_D32_FLOAT;
+		depth_stencil_view_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		depth_stencil_view_desc.Texture2D.MipSlice = 0;
+		hr = device->CreateDepthStencilView(depth_buffer.Get(),
+			&depth_stencil_view_desc,
+			shadowmap_depth_stencil_view.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		//シェーダーリソースビュー生成
+		D3D11_SHADER_RESOURCE_VIEW_DESC shader_resource_view_desc{};
+		shader_resource_view_desc.Format = DXGI_FORMAT_R32_FLOAT;
+		shader_resource_view_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		shader_resource_view_desc.Texture2D.MostDetailedMip = 0;
+		shader_resource_view_desc.Texture2D.MipLevels = 1;
+		hr = device->CreateShaderResourceView(depth_buffer.Get(),
+			&shader_resource_view_desc,
+			shadowmap_shader_resource_view.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 
-		// 描画オブジェクトの読み込み
+		//D3D11_SAMPLER_DESC sampler_desc{};
+		////画質
+		//sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+
+		////ここ変えるとループだったり伸びたりする
+		//sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		//sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		//sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+
+		//sampler_desc.MipLODBias = 0;
+		//sampler_desc.MaxAnisotropy = 16;
+		//sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		//sampler_desc.BorderColor[0] = FLT_MAX;
+		//sampler_desc.BorderColor[1] = FLT_MAX;
+		//sampler_desc.BorderColor[2] = FLT_MAX;
+		//sampler_desc.BorderColor[3] = FLT_MAX;
+		//sampler_desc.MinLOD = 0;
+		//sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
+		//hr = device->CreateSamplerState(&sampler_desc, sampler_state.GetAddressOf());
+	}
+	// 描画オブジェクトの読み込み
+	{
+		//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
+		//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\globe\\globe.obj", true);
+		//scaling.x = 0.01f;
+		//scaling.y = 0.01f;
+		//scaling.z = 0.01f;
+		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true));
+		dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
+
+		//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
+		dummy_sprite = std::make_unique<sprite>(device.Get(), scene_shader_resource_view);
+		//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
+		load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
+
+		//サンプラーステート生成
+		D3D11_SAMPLER_DESC sampler_desc{};
+		sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler_desc.MaxAnisotropy = 16;
+		sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		sampler_desc.MinLOD = 0;
+		sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
+		hr = device->CreateSamplerState(&sampler_desc, ramp_sampler_state.GetAddressOf());
+		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+
+		load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
+	}
+	//ポイントライト・スポットライトの初期位置を設定
+	{
+		//point_light
+		point_light[0].position.x = 10;
+		point_light[0].position.y = 1;
+		point_light[0].range = 10;
+		point_light[0].color = { 1,0,0,1 };
+
+		point_light[1].position.x = -10;
+		point_light[1].position.y = 1;
+		point_light[1].range = 10;
+		point_light[1].color = { 0,1,0,1 };
+
+		point_light[2].position.y = 1;
+		point_light[2].position.z = 10;
+		point_light[2].range = 10;
+		point_light[2].color = { 0,0,1,1 };
+
+		point_light[3].position.y = 1;
+		point_light[3].position.z = -10;
+		point_light[3].range = 10;
+		point_light[3].color = { 1,1,1,1 };
+
+		point_light[4].range = 10;
+		point_light[4].color = { 1,1,1,1 };
+
+		ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
+
+		//spot_light
+		spot_light[0].position = { 15,3,15,0 };
+		spot_light[0].direction = { -1,-1,-1,0 };
+		spot_light[0].range = 100;
+		spot_light[0].color = { 1,0,0,1 };
+
+		spot_light[1].position = { -15,3,15,0 };
+		spot_light[1].direction = { +1,-1,-1,0 };
+		spot_light[1].range = 100;
+		spot_light[1].color = { 0,1,0,1 };
+
+		spot_light[2].position = { 15,3,-15,0 };
+		spot_light[2].direction = { -1,-1,+1,0 };
+		spot_light[2].range = 100;
+		spot_light[2].color = { 0,0,1,1 };
+
+		spot_light[3].position = { -15,3,-15,0 };
+		spot_light[3].direction = { +1,-1,+1,0 };
+		spot_light[3].range = 100;
+		spot_light[3].color = { 1,1,1,1 };
+
+		ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
+	}
+	// シェーダーの読み込み
+	{
+		// static_mesh用デフォルト描画シェーダー
 		{
-			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true);
-			//dummy_static_mesh = std::make_unique<static_mesh>(device.Get(), L".\\resources\\globe\\globe.obj", true);
-			//scaling.x = 0.01f;
-			//scaling.y = 0.01f;
-			//scaling.z = 0.01f;
-			dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\ball\\ball.obj", true));
-			dummy_static_meshes.push_back(std::make_unique<static_mesh>(device.Get(), L".\\resources\\plane\\plane.obj", true));
-
-			//dummy_sprite = std::make_unique<sprite>(device.Get(), L".\\resources\\chip_win.png");
-			dummy_sprite = std::make_unique<sprite>(device.Get(), scene_shader_resource_view);
-			//load_texture_from_file(device.Get(), L".\\resources\\mask\\dissolve_animation.png", mask_texture.GetAddressOf(), &mask_texture2dDesc);
-			load_texture_from_file(device.Get(), L".\\resources\\ramp.png", ramp_texture.GetAddressOf(), &ramp_texture2dDesc);
-
-			//サンプラーステート生成
-			D3D11_SAMPLER_DESC sampler_desc{};
-			sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-			sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-			sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-			sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-			sampler_desc.MaxAnisotropy = 16;
-			sampler_desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-			sampler_desc.MinLOD = 0;
-			sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
-			hr = device->CreateSamplerState(&sampler_desc, ramp_sampler_state.GetAddressOf());
-			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
-
-			load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
-		}
-		//ポイントライト・スポットライトの初期位置を設定
-		{
-			//point_light
-			point_light[0].position.x = 10;
-			point_light[0].position.y = 1;
-			point_light[0].range = 10;
-			point_light[0].color = { 1,0,0,1 };
-
-			point_light[1].position.x = -10;
-			point_light[1].position.y = 1;
-			point_light[1].range = 10;
-			point_light[1].color = { 0,1,0,1 };
-
-			point_light[2].position.y = 1;
-			point_light[2].position.z = 10;
-			point_light[2].range = 10;
-			point_light[2].color = { 0,0,1,1 };
-
-			point_light[3].position.y = 1;
-			point_light[3].position.z = -10;
-			point_light[3].range = 10;
-			point_light[3].color = { 1,1,1,1 };
-
-			point_light[4].range = 10;
-			point_light[4].color = { 1,1,1,1 };
-
-			ZeroMemory(&point_light[5], sizeof(point_lights) * 3);
-
-			//spot_light
-			spot_light[0].position = { 15,3,15,0 };
-			spot_light[0].direction = { -1,-1,-1,0 };
-			spot_light[0].range = 100;
-			spot_light[0].color = { 1,0,0,1 };
-
-			spot_light[1].position = { -15,3,15,0 };
-			spot_light[1].direction = { +1,-1,-1,0 };
-			spot_light[1].range = 100;
-			spot_light[1].color = { 0,1,0,1 };
-
-			spot_light[2].position = { 15,3,-15,0 };
-			spot_light[2].direction = { -1,-1,+1,0 };
-			spot_light[2].range = 100;
-			spot_light[2].color = { 0,0,1,1 };
-
-			spot_light[3].position = { -15,3,-15,0 };
-			spot_light[3].direction = { +1,-1,+1,0 };
-			spot_light[3].range = 100;
-			spot_light[3].color = { 1,1,1,1 };
-
-			ZeroMemory(&spot_light[4], sizeof(spot_lights) * 4);
-		}
-		// シェーダーの読み込み
-		{
-			// static_mesh用デフォルト描画シェーダー
+			D3D11_INPUT_ELEMENT_DESC input_element_desc[]
 			{
-				D3D11_INPUT_ELEMENT_DESC input_element_desc[]
-				{
-					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				};
+				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			};
 #ifdef PHONGSHADER
-				create_vs_from_cso(device.Get(),
-					"phong_shader_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"phong_shader_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"phong_shader_vs.cso",
+				mesh_vertex_shader.GetAddressOf(),
+				mesh_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"phong_shader_ps.cso",
+				mesh_pixel_shader.GetAddressOf());
 #endif // PHONGSHADER
 
 #ifdef RAMPSHADER
-				create_vs_from_cso(device.Get(),
-					"ramp_shader_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"ramp_shader_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"ramp_shader_vs.cso",
+				mesh_vertex_shader.GetAddressOf(),
+				mesh_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"ramp_shader_ps.cso",
+				mesh_pixel_shader.GetAddressOf());
 #endif // RAMPSHADER
 
 #ifdef ENVIRONMENTMAPPINGSHADER
-				create_vs_from_cso(device.Get(),
-					"environment_mapping_shader_vs.cso",
-					mesh_vertex_shader.GetAddressOf(),
-					mesh_input_layout.GetAddressOf(),
-					input_element_desc,
-					ARRAYSIZE(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"environment_mapping_shader_ps.cso",
-					mesh_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"environment_mapping_shader_vs.cso",
+				mesh_vertex_shader.GetAddressOf(),
+				mesh_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"environment_mapping_shader_ps.cso",
+				mesh_pixel_shader.GetAddressOf());
 #endif // ENVIRONMENTMAPPINGSHADER
 
-
-			}
-			// sprite用デフォルト描画シェーダー
+			//シャドウマップ生成用シェーダー
+			create_vs_from_cso(device.Get(),
+				"shadowmap_caster_vs.cso",
+				shadowmap_caster_vertex_shader.GetAddressOf(),
+				shadowmap_caster_input_layout.GetAddressOf(),
+				input_element_desc,
+				ARRAYSIZE(input_element_desc));
+		}
+		// sprite用デフォルト描画シェーダー
+		{
+			D3D11_INPUT_ELEMENT_DESC input_element_desc[]
 			{
-				D3D11_INPUT_ELEMENT_DESC input_element_desc[]
-				{
-					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-					{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				};
+				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			};
 
-				create_vs_from_cso(device.Get(),
-					"UVScroll_vs.cso",
-					sprite_vertex_shader.GetAddressOf(),
-					sprite_input_layout.GetAddressOf(),
-					input_element_desc,
-					_countof(input_element_desc));
-				create_ps_from_cso(device.Get(),
-					"UVScroll_ps.cso",
-					sprite_pixel_shader.GetAddressOf());
+			create_vs_from_cso(device.Get(),
+				"UVScroll_vs.cso",
+				sprite_vertex_shader.GetAddressOf(),
+				sprite_input_layout.GetAddressOf(),
+				input_element_desc,
+				_countof(input_element_desc));
+			create_ps_from_cso(device.Get(),
+				"UVScroll_ps.cso",
+				sprite_pixel_shader.GetAddressOf());
 
-				create_vs_from_cso(device.Get(), "color_filter_vs.cso", sprite_vertex_shader.GetAddressOf(),
-					sprite_input_layout.GetAddressOf(), input_element_desc, _countof(input_element_desc));
-				create_ps_from_cso(device.Get(), "color_filter_ps.cso", sprite_pixel_shader.GetAddressOf());
-
-			}
+			create_vs_from_cso(device.Get(), "color_filter_vs.cso", sprite_vertex_shader.GetAddressOf(),
+				sprite_input_layout.GetAddressOf(), input_element_desc, _countof(input_element_desc));
+			create_ps_from_cso(device.Get(), "color_filter_ps.cso", sprite_pixel_shader.GetAddressOf());
 
 		}
 
-		return true;
 	}
+	return true;
 }
 
 bool framework::uninitialize()
@@ -423,10 +492,16 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 	ImGui::SliderFloat3("directional_light_direction", &directional_light_direction.x, -1.0f, +1.0f);
 	ImGui::ColorEdit3("directional_light_color", &directional_light_color.x);
 	ImGui::Separator();
+	ImGui::ColorEdit3("shadow_color", &shadow_color.x);
+	ImGui::SliderFloat("shadow_bias", &shadow_bias, 0.0f, +0.01f);
+	ImGui::Separator();
 	if (ImGui::TreeNode("texture"))
 	{
 		ImGui::Text("scene_texture");
 		ImGui::Image(scene_shader_resource_view.Get(), { 256, 144 }, { 0, 0 }, { 1, 1 }, { 1, 1, 1, 1 });
+		ImGui::Text("shadow_map");
+		ImGui::Image(shadowmap_shader_resource_view.Get(), { 256, 256 }, { 0, 0 }, { 1, 1 }, { 1, 1, 1, 1 });
+
 		ImGui::TreePop();
 	}
 	if (ImGui::TreeNode("points"))
@@ -472,7 +547,77 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 {
 	HRESULT hr{ S_OK };
+	//シャドウマップ生成処理
+	{
+		//シャドウマップ用の深度バッファに設定
+		immediate_context->ClearDepthStencilView(shadowmap_depth_stencil_view.Get(),D3D11_CLEAR_DEPTH| D3D11_CLEAR_STENCIL, 1.0f, 0);
+		immediate_context->OMSetRenderTargets(0, nullptr, shadowmap_depth_stencil_view.Get());
+		//ビューポートの設定
+		D3D11_VIEWPORT viewport{};
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 0;
+		viewport.Width = static_cast<float>(SHADOWMAP_WIDTH);
+		viewport.Height = static_cast<float>(SHADOWMAP_HEIGHT);
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+		immediate_context->RSSetViewports(1, &viewport);
+		//ブレンドステートの設定
+		immediate_context->OMSetBlendState(blend_state.Get(), nullptr, 0xFFFFFFFF);
+		//深度ステンシルステートの設定
+		immediate_context->OMSetDepthStencilState(depth_stencil_state.Get(), 0);
+		//ラスタライザーステートの設定
+		immediate_context->RSSetState(rasterizer_state.Get());
+		//シェーダーの設定
+		immediate_context->IASetInputLayout(shadowmap_caster_input_layout.Get());
+		immediate_context->VSSetShader(shadowmap_caster_vertex_shader.Get(), nullptr, 0);
+		immediate_context->PSSetShader(nullptr, nullptr, 0);
 
+		DirectX::XMMATRIX S, R, T;
+		DirectX::XMFLOAT4X4 world;
+		{
+			//ライトの位置から見た視線行列を生成
+			DirectX::XMVECTOR LightPosition = DirectX::XMLoadFloat4(&directional_light_direction);
+			LightPosition = DirectX::XMVectorScale(LightPosition, -50);
+			DirectX::XMMATRIX V = DirectX::XMMatrixLookAtLH(LightPosition,
+				DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+				DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+			//シャドウマップに描画したい範囲の射影行列を生成
+			DirectX::XMMATRIX P = DirectX::XMMatrixOrthographicLH(SHADOWMAP_DRAWRECT, SHADOWMAP_DRAWRECT, 0.1f, 200.0f);
+			//ライトビュー行列を保存
+			//DirectX::XMStoreFloat4x4(&light_view_projection, V * P);
+
+			//定数バッファの更新
+			{
+				// 0番はメッシュ側で更新している
+				
+				//1番
+				scene_constants scene{};
+				scene.options.x = cursor_position.x;
+				scene.options.y = cursor_position.y;
+				scene.options.z = timer;
+				scene.options.w = flag;
+				DirectX::XMStoreFloat4x4(&scene.view_projection, V * P);
+				//scene.view_projection = light_view_projection;
+				immediate_context->UpdateSubresource(scene_constant_buffer.Get(), 0, 0, &scene, 0, 0);
+				immediate_context->VSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
+				immediate_context->PSSetConstantBuffers(1, 1, scene_constant_buffer.GetAddressOf());
+			}
+			//大量モデル描画
+			for (int x = -10; x < 10; ++x)
+			{
+				for (int z = 0; z < 75; ++z)
+				{
+					S = DirectX::XMMatrixScaling(0.01f * scaling.x, 0.01f * scaling.y, 0.01f * scaling.z);
+					R = DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+					T = DirectX::XMMatrixTranslation(translation.x + (static_cast<float>(x) * 3),
+						translation.y,
+						translation.z + (static_cast<float>(z) * 3));
+					DirectX::XMStoreFloat4x4(&world, S * R * T);
+					dummy_static_meshes[0]->render(immediate_context.Get(), world, material_color);
+				}
+			}
+		}
+	}
 	// レンダーターゲット等の設定とクリア
 	FLOAT color[]{ 0.2f, 0.2f, 0.2f, 1.0f };
 	immediate_context->ClearRenderTargetView(scene_render_target_view.Get(), color);
@@ -655,6 +800,15 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->UpdateSubresource(fog_constant_buffer.Get(), 0, 0, &fogs, 0, 0);
 		immediate_context->VSSetConstantBuffers(5, 1, fog_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(5, 1, fog_constant_buffer.GetAddressOf());
+
+		////6番
+		//shadowmap_constants shadowmap{};
+		//shadowmap.light_view_projection = light_view_projection;
+		//shadowmap.shadow_color = shadow_color;
+		//shadowmap.shadow_bias = shadow_bias;
+		//immediate_context->UpdateSubresource(shadowmap_constant_buffer.Get(), 0, 0, &shadowmap, 0, 0);
+		//immediate_context->VSSetConstantBuffers(6, 1, shadowmap_constant_buffer.GetAddressOf());
+		//immediate_context->PSSetConstantBuffers(6, 1, shadowmap_constant_buffer.GetAddressOf());
 	}
 
 	// static_mesh描画
@@ -670,7 +824,8 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->PSSetSamplers(2, 1, ramp_sampler_state.GetAddressOf());
 
 		immediate_context->PSSetShaderResources(3, 1, environment_texture.GetAddressOf());
-
+		//immediate_context->PSSetShaderResources(4, 1, shadowmap_shader_resource_view.GetAddressOf());
+		//immediate_context->PSSetSamplers(4, 1, shadowmap_sampler_state.GetAddressOf());
 
 		//DirectX::XMMATRIX S{ DirectX::XMMatrixScaling(scaling.x, scaling.y, scaling.z) };
 		//DirectX::XMMATRIX R{ DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };
@@ -698,6 +853,8 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		T = { DirectX::XMMatrixTranslation(translation.x, translation.y-1, translation.z ) };
 		DirectX::XMStoreFloat4x4(&world, S * R * T);
 		dummy_static_meshes[1]->render(immediate_context.Get(), world, material_color);
+		//ID3D11ShaderResourceView* clear_shader_resource_view[]{ nullptr };
+		//immediate_context->PSSetShaderResources(4, 1, clear_shader_resource_view);
 	}
 	//	バックバッファに描画先を戻して描画する
 	immediate_context->ClearRenderTargetView(render_target_view.Get(), color);

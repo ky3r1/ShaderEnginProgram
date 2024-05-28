@@ -9,6 +9,7 @@ struct VS_OUT
     float3 binormal : BINORMAL;
     float3 normal : NORMAL;
     float2 texcoord : TEXCOORD;
+    //float3 shadow_texcoord : TEXCOORD1;//シャドウマップ用のパラメータ変数
 };
 
 cbuffer OBJECT_CONSTANT_BUFFER : register(b0)
@@ -48,4 +49,10 @@ cbuffer FOG_CONSTANT_BUFFER : register(b5)
     float4 fog_range;
 }
 
+//cbuffer SHADOWMAP_CONSTANT_BUFFER : register(b6)
+//{
+//    row_major float4x4 light_view_projection;
+//    float3 shadow_color;
+//    float shadow_bias;
+//}
 #include "shading_functions.hlsli"

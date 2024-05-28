@@ -14,6 +14,15 @@ VS_OUT main(float4 position:POSITION,float4 normal:NORMAL,float2 texcoord:TEXCOO
     vout.tangent = normalize(cross(vout.binormal, vout.normal));//外積
     vout.binormal = normalize(cross(vout.normal, vout.tangent));
     vout.texcoord = texcoord;
-    
+    ////シャドウマップ用のパラメーター計算
+    //{
+    //    //ライトから見たNDC座標を算出
+    //    float4 wvpPos = mul(position, mul(world, light_view_projection));
+    //    //NDC座標からUV座標を算出する
+    //    wvpPos /= wvpPos.w;
+    //    wvpPos.y = -wvpPos.y;
+    //    wvpPos.xy = 0.5f * wvpPos.xy + 0.5f;
+    //    vout.shadow_texcoord = wvpPos.xyz;
+    //}
     return vout;
 }
