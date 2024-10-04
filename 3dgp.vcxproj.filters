@@ -149,6 +149,9 @@
     <None Include="filter_functions.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="skymap.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="geometric_primitive_ps.hlsl">
@@ -209,6 +212,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="shadowmap_caster_vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="skymap_ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="skymap_vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

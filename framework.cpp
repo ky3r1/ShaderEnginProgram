@@ -225,6 +225,11 @@ bool framework::initialize()
 			hr = device->CreateBuffer(&buffer_desc, nullptr, shadowmap_constant_buffer.GetAddressOf());
 			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 		}
+		{
+			buffer_desc.ByteWidth = sizeof(skymap_constants);
+			hr=device->CreateBuffer(&buffer_desc, nullptr, skymap_constant_buffer.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
 	}	//ライトから見たシーンの深度描画用のバッファ生成
 	{
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> depth_buffer{};
@@ -310,6 +315,21 @@ bool framework::initialize()
 		_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
 
 		load_texture_from_file(device.Get(), L".\\resources\\SphereMap.bmp", environment_texture.GetAddressOf(), &enviroment_texture2dDesc);
+	
+		// スカイマップ用に深度値を書き込まない深度ステンシルステートの生成
+		{
+			D3D11_DEPTH_STENCIL_DESC depth_stencil_desc{};
+			depth_stencil_desc.DepthEnable = TRUE;
+			depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+			depth_stencil_desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+			hr = device->CreateDepthStencilState(&depth_stencil_desc, skymap_depth_stencil_state.GetAddressOf());
+			_ASSERT_EXPR(SUCCEEDED(hr), hr_trace(hr));
+		}
+
+		// スカイマップ用のテクスチャ及びスプライトを準備
+		load_texture_from_file(device.Get(), L".\\resources\\skybox\\incskies_050_16k.png",
+			skymap_shader_resource_view.GetAddressOf(), &skymap_texture2d_desc);
+		skymap_sprite = std::make_unique<sprite>(device.Get(), skymap_shader_resource_view);
 	}
 	//ポイントライト・スポットライトの初期位置を設定
 	{
@@ -438,6 +458,12 @@ bool framework::initialize()
 			create_vs_from_cso(device.Get(), "color_filter_vs.cso", sprite_vertex_shader.GetAddressOf(),
 				sprite_input_layout.GetAddressOf(), input_element_desc, _countof(input_element_desc));
 			create_ps_from_cso(device.Get(), "color_filter_ps.cso", sprite_pixel_shader.GetAddressOf());
+
+
+			create_vs_from_cso(device.Get(), "skymap_vs.cso", skymap_vertex_shader.GetAddressOf(), 
+				skymap_input_layout.GetAddressOf(), input_element_desc, _countof(input_element_desc));
+			create_ps_from_cso(device.Get(), "skymap_ps.cso", skymap_pixel_shader.GetAddressOf());
+
 
 		}
 
@@ -808,6 +834,27 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->UpdateSubresource(shadowmap_constant_buffer.Get(), 0, 0, &shadowmap, 0, 0);
 		immediate_context->VSSetConstantBuffers(6, 1, shadowmap_constant_buffer.GetAddressOf());
 		immediate_context->PSSetConstantBuffers(6, 1, shadowmap_constant_buffer.GetAddressOf());
+
+		//7番
+		skymap_constants skymap{};
+		DirectX::XMStoreFloat4x4(&skymap.inverse_view_projection, DirectX::XMMatrixInverse(nullptr, V* P));
+		immediate_context->UpdateSubresource(skymap_constant_buffer.Get(), 0, 0, &skymap, 0, 0);
+        immediate_context->VSSetConstantBuffers(7, 1, skymap_constant_buffer.GetAddressOf());
+        immediate_context->PSSetConstantBuffers(7, 1, skymap_constant_buffer.GetAddressOf());
+	}
+
+	//Skymap描画
+	{
+		if (skymap_sprite)
+		{
+			immediate_context->IASetInputLayout(skymap_input_layout.Get());
+			immediate_context->VSSetShader(skymap_vertex_shader.Get(), nullptr, 0);
+			immediate_context->PSSetShader(skymap_pixel_shader.Get(), nullptr, 0);
+			immediate_context->PSSetSamplers(0, 1, sampler_state.GetAddressOf());
+			immediate_context->OMSetDepthStencilState(skymap_depth_stencil_state.Get(), 0);
+			skymap_sprite->render(immediate_context.Get(), 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+			immediate_context->OMSetDepthStencilState(depth_stencil_state.Get(), 0);
+		}
 	}
 
 	// static_mesh描画
@@ -825,6 +872,11 @@ void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 		immediate_context->PSSetShaderResources(3, 1, environment_texture.GetAddressOf());
 		immediate_context->PSSetShaderResources(4, 1, shadowmap_shader_resource_view.GetAddressOf());
 		immediate_context->PSSetSamplers(4, 1, shadowmap_sampler_state.GetAddressOf());
+
+		immediate_context->PSSetSamplers(4, 1, shadowmap_sampler_state.GetAddressOf());
+		immediate_context->PSSetShaderResources(5, 1, skymap_shader_resource_view.GetAddressOf());
+		immediate_context->PSSetSamplers(5, 1, sampler_state.GetAddressOf());
+
 
 		//DirectX::XMMATRIX S{ DirectX::XMMatrixScaling(scaling.x, scaling.y, scaling.z) };
 		//DirectX::XMMATRIX R{ DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z) };

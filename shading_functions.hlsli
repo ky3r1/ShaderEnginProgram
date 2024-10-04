@@ -113,3 +113,18 @@ float4 CalcFog(in float4 color,float4 fog_color,float2 fog_range,float eye_lengt
     return lerp(color, fog_color, fogAlpha);
 
 }
+
+//--------------------------------------------
+//	パノラマスカイボックス
+//--------------------------------------------
+// tex:パノラマスカイボックス用テクスチャ
+// samp: パノラマスカイボックス用サンプラステート
+//direction:方向ベクトル(正規化済み)
+float4 SampleSkybox(Texture2D tex, SamplerState samp, float3 direction)
+{
+    static const float PI = 3.14159265f;
+
+    float latitude = (1.0f / (2.0f * PI)) * atan2(direction.z, direction.x) + 0.5f;
+    float longitude = (1.0f / PI) * atan2(direction.y, length(direction.xz)) + 0.5f;
+    return tex.Sample(samp, float2(1.0f - saturate(latitude), 1.0f - saturate(longitude)));
+}

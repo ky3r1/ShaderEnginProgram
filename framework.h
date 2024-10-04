@@ -289,6 +289,7 @@ public:
 	DirectX::XMFLOAT4 directional_light_color{ 1.0f, 1.0f, 1.0f, 1.0f };
 	point_lights point_light[8];
 	spot_lights spot_light[8];
+
 	struct color_filter
 	{
 		float	hueShift;	// êFëäí≤êÆ
@@ -314,6 +315,20 @@ public:
 	DirectX::XMFLOAT4X4 light_view_projection;
 	float shadow_bias{ 0.008f };
 	DirectX::XMFLOAT3 shadow_color{ 0.3f,0.3f,0.3f };
+
+	struct skymap_constants
+	{
+		DirectX::XMFLOAT4X4 inverse_view_projection;
+	};
+	Microsoft::WRL::ComPtr<ID3D11Buffer> skymap_constant_buffer;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> skymap_vertex_shader;
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> skymap_input_layout;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> skymap_pixel_shader;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> skymap_depth_stencil_state;
+	D3D11_TEXTURE2D_DESC skymap_texture2d_desc;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> skymap_shader_resource_view;
+	std::unique_ptr<sprite> skymap_sprite;
+
 private:
 	D3D11_TEXTURE2D_DESC mask_texture2dDesc;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mask_texture;

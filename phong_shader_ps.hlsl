@@ -5,6 +5,8 @@ SamplerState color_sampler_state : register(s0);
 Texture2D normal_map : register(t1);
 Texture2D shadow_map : register(t4);
 SamplerState shadow_sampler_state : register(s4);
+Texture2D sky_map : register(t5);
+SamplerState sky_sampler_state : register(s5);
 
 float4 main(VS_OUT pin):SV_TARGET
 {
@@ -79,6 +81,11 @@ float4 main(VS_OUT pin):SV_TARGET
         if (pin.shadow_texcoord.z - depth > shadow_bias)
         {
             color.rgb *= shadow_color.rgb;
+        }
+        //スカイボックスを環境マッピングの様に適応
+        {
+            float4 skybox_color = SampleSkybox(sky_map, shadow_sampler_state, reflect(E, N));
+            color.rgb = lerp(color.rgb, skybox_color.rgb, environment_value);
         }
     }
     
